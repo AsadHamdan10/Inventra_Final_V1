@@ -235,7 +235,7 @@ export default function AppLayout({ isAdmin = false }: AppLayoutProps) {
 
           <div className="pt-1 border-t border-gray-800/60">
             <p className="text-[10px] text-gray-600 leading-relaxed">
-              <span className="text-gray-500 font-semibold">Inventra ERP</span> v1.0
+              <span className="text-gray-500 font-semibold">Inventra ERP</span> v1.0.7
               <br />
               Developed &amp; Maintained by
               <br />

@@ -22,6 +22,7 @@ import {
   Template09DetailedGST,
   Template10Executive,
 } from './Template03to10';
+import Template11ProfessionalGST from './Template11ProfessionalGST';
 
 interface Props {
   templateId: TemplateId;
@@ -68,6 +69,7 @@ function getTemplate(id: TemplateId): React.ComponentType<{ data: InvoiceData; s
     case 8:  return Template08Boxed;
     case 9:  return Template09DetailedGST;
     case 10: return Template10Executive;
+    case 11: return Template11ProfessionalGST;
     default: return Template01Classic;
   }
 }

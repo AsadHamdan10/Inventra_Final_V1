@@ -340,6 +340,42 @@ model Sale {
   createdAt       DateTime @default(now()) @map("created_at")
   updatedAt       DateTime @updatedAt @map("updated_at")
 
+  // ── Professional GST Invoice Template — additive-only fields ──
+  // All nullable. Existing rows get NULL automatically; nothing here
+  // is read or written by any pre-existing template, calculation,
+  // or API consumer. See migration notes for the "Professional GST
+  // Invoice" template (Template11ProfessionalGST) for context.
+  referenceNo      String?   @map("reference_no") @db.VarChar(100)
+  referenceDate    DateTime? @map("reference_date") @db.Date
+  deliveryNote     String?   @map("delivery_note") @db.VarChar(200)
+  buyerOrderNo     String?   @map("buyer_order_no") @db.VarChar(100)
+  buyerOrderDate   DateTime? @map("buyer_order_date") @db.Date
+  dispatchDocNo    String?   @map("dispatch_doc_no") @db.VarChar(100)
+  deliveryNoteDate DateTime? @map("delivery_note_date") @db.Date
+  modeOfPayment    String?   @map("mode_of_payment") @db.VarChar(100)
+  otherReference   String?   @map("other_reference") @db.VarChar(200)
+  transportName    String?   @map("transport_name") @db.VarChar(200)
+  lrNumber         String?   @map("lr_number") @db.VarChar(100)
+  destination      String?   @map("destination") @db.VarChar(200)
+  vehicleNumber    String?   @map("vehicle_number") @db.VarChar(50)
+  ewayBillNo       String?   @map("eway_bill_no") @db.VarChar(50)
+  termsOfDelivery  String?   @map("terms_of_delivery") @db.Text
+
+  // Ship To (Consignee) — optional, per-invoice only.
+  shipCompanyName   String? @map("ship_company_name") @db.VarChar(200)
+  shipAddressLine1  String? @map("ship_address_line1") @db.Text // AES-256 encrypted
+  shipAddressLine2  String? @map("ship_address_line2") @db.Text // AES-256 encrypted
+  shipCity          String? @map("ship_city") @db.VarChar(100)
+  shipState         String? @map("ship_state") @db.VarChar(100)
+  shipPincode       String? @map("ship_pincode") @db.VarChar(20)
+  shipGSTIN         String? @map("ship_gstin") @db.Text // AES-256 encrypted
+  shipContactPerson String? @map("ship_contact_person") @db.VarChar(150)
+  shipMobile        String? @map("ship_mobile") @db.VarChar(20)
+
+  // Nullable tri-state: NULL/true = use buyer address as shipping (default
+  // behaviour, matches every existing invoice); false = dedicated Ship To.
+  useBuyerAsShipping Boolean? @map("use_buyer_as_shipping")
+
   user               User                @relation(fields: [userId], references: [id], onDelete: Cascade)
   customer           Customer?           @relation(fields: [customerId], references: [id], onDelete: SetNull)
   items              SaleItem[]

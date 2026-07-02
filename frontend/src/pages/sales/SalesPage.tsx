@@ -48,6 +48,21 @@ customerAddress: '',
 deliveryAddress: '',
 isInterState: false,
 items: [emptyItem(), emptyItem()],
+
+  // ── Professional GST Invoice Template — additive-only, all optional ──
+  referenceNo: '', referenceDate: '',
+  deliveryNote: '',
+  buyerOrderNo: '', buyerOrderDate: '',
+  dispatchDocNo: '', deliveryNoteDate: '',
+  modeOfPayment: '', otherReference: '',
+  transportName: '', lrNumber: '', destination: '', vehicleNumber: '',
+  ewayBillNo: '', termsOfDelivery: '',
+
+  // Ship To (Consignee) — per-invoice only, defaults to "same as buyer"
+  useBuyerAsShipping: true,
+  shipCompanyName: '', shipAddressLine1: '', shipAddressLine2: '',
+  shipCity: '', shipState: '', shipPincode: '', shipGSTIN: '',
+  shipContactPerson: '', shipMobile: '',
 });
 
 function calcItem(it: SItem): SItem {
@@ -99,6 +114,7 @@ export default function SalesPage() {
   const [editing, setEditing] = useState<number | null>(null);
   const [del, setDel] = useState<number | null>(null);
   const [form, setForm] = useState(emptyForm());
+  const [showGstDetails, setShowGstDetails] = useState(false); // Additional Invoice Details — collapsed by default
 
   // Gallery state — shared across all rows
   const [galleryOpen, setGalleryOpen] = useState(false);
@@ -200,6 +216,34 @@ const firstBankAccount = bankAccounts[0];
 customerAddress: (s.customerAddress as string) || '',
 deliveryAddress: (s.deliveryAddress as string) || '',
 isInterState: +((s.igstAmount as number) || 0) > 0,
+
+      // ── Professional GST Invoice Template — additive-only ──
+      referenceNo: (s.referenceNo as string) || '',
+      referenceDate: s.referenceDate ? format(new Date(s.referenceDate as string), 'yyyy-MM-dd') : '',
+      deliveryNote: (s.deliveryNote as string) || '',
+      buyerOrderNo: (s.buyerOrderNo as string) || '',
+      buyerOrderDate: s.buyerOrderDate ? format(new Date(s.buyerOrderDate as string), 'yyyy-MM-dd') : '',
+      dispatchDocNo: (s.dispatchDocNo as string) || '',
+      deliveryNoteDate: s.deliveryNoteDate ? format(new Date(s.deliveryNoteDate as string), 'yyyy-MM-dd') : '',
+      modeOfPayment: (s.modeOfPayment as string) || '',
+      otherReference: (s.otherReference as string) || '',
+      transportName: (s.transportName as string) || '',
+      lrNumber: (s.lrNumber as string) || '',
+      destination: (s.destination as string) || '',
+      vehicleNumber: (s.vehicleNumber as string) || '',
+      ewayBillNo: (s.ewayBillNo as string) || '',
+      termsOfDelivery: (s.termsOfDelivery as string) || '',
+
+      useBuyerAsShipping: (s.useBuyerAsShipping as boolean) ?? true,
+      shipCompanyName: (s.shipCompanyName as string) || '',
+      shipAddressLine1: (s.shipAddressLine1 as string) || '',
+      shipAddressLine2: (s.shipAddressLine2 as string) || '',
+      shipCity: (s.shipCity as string) || '',
+      shipState: (s.shipState as string) || '',
+      shipPincode: (s.shipPincode as string) || '',
+      shipGSTIN: (s.shipGSTIN as string) || '',
+      shipContactPerson: (s.shipContactPerson as string) || '',
+      shipMobile: (s.shipMobile as string) || '',
       items: (s.items as SItem[])?.length
         ? (s.items as Array<Record<string, unknown>>).map((it) => ({
             materialName: it.materialName as string,
@@ -738,6 +782,133 @@ isInterState: +((s.igstAmount as number) || 0) > 0,
                   </div>
                 ))}
               </div>
+
+              {/* ── Additional Invoice Details (collapsible, default collapsed) ── */}
+              <div className="border border-gray-200 dark:border-gray-700 rounded-xl overflow-hidden">
+                <button
+                  type="button"
+                  onClick={() => setShowGstDetails((v) => !v)}
+                  className="w-full flex items-center justify-between px-4 py-3 bg-gray-50 dark:bg-gray-800 text-sm font-semibold text-gray-700 dark:text-gray-300"
+                >
+                  <span>Additional Invoice Details</span>
+                  <span className="text-xs text-gray-400">{showGstDetails ? '▲ Hide' : '▼ Show (optional)'}</span>
+                </button>
+                {showGstDetails && (
+                  <div className="p-4 space-y-4">
+                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">REFERENCE NUMBER</label>
+                        <input className="input" value={form.referenceNo} onChange={sf('referenceNo')} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">REFERENCE DATE</label>
+                        <input className="input" type="date" value={form.referenceDate} onChange={sf('referenceDate')} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">DELIVERY NOTE</label>
+                        <input className="input" value={form.deliveryNote} onChange={sf('deliveryNote')} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">MODE OF PAYMENT</label>
+                        <input className="input" value={form.modeOfPayment} onChange={sf('modeOfPayment')} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">BUYER'S ORDER NUMBER</label>
+                        <input className="input" value={form.buyerOrderNo} onChange={sf('buyerOrderNo')} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">BUYER'S ORDER DATE</label>
+                        <input className="input" type="date" value={form.buyerOrderDate} onChange={sf('buyerOrderDate')} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">DISPATCH DOCUMENT NUMBER</label>
+                        <input className="input" value={form.dispatchDocNo} onChange={sf('dispatchDocNo')} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">DELIVERY NOTE DATE</label>
+                        <input className="input" type="date" value={form.deliveryNoteDate} onChange={sf('deliveryNoteDate')} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">OTHER REFERENCE</label>
+                        <input className="input" value={form.otherReference} onChange={sf('otherReference')} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">TRANSPORT NAME</label>
+                        <input className="input" value={form.transportName} onChange={sf('transportName')} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">LR / RR NUMBER</label>
+                        <input className="input" value={form.lrNumber} onChange={sf('lrNumber')} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">DESTINATION</label>
+                        <input className="input" value={form.destination} onChange={sf('destination')} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">VEHICLE NUMBER</label>
+                        <input className="input" value={form.vehicleNumber} onChange={sf('vehicleNumber')} />
+                      </div>
+                      <div>
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">E-WAY BILL NUMBER</label>
+                        <input className="input" value={form.ewayBillNo} onChange={sf('ewayBillNo')} />
+                      </div>
+                      <div className="lg:col-span-2">
+                        <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">TERMS OF DELIVERY</label>
+                        <input className="input" value={form.termsOfDelivery} onChange={sf('termsOfDelivery')} />
+                      </div>
+                    </div>
+
+                    {/* ── Ship To (Consignee) ── */}
+                    <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+                      <label className="flex items-center gap-2 text-sm font-medium cursor-pointer mb-3">
+                        <input type="checkbox" className="w-4 h-4" checked={form.useBuyerAsShipping} onChange={sf('useBuyerAsShipping')} />
+                        <span>Use Buyer Address for Shipping</span>
+                      </label>
+                      {!form.useBuyerAsShipping && (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">SHIP TO — COMPANY NAME</label>
+                            <input className="input" value={form.shipCompanyName} onChange={sf('shipCompanyName')} />
+                          </div>
+                          <div className="lg:col-span-2">
+                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">ADDRESS LINE 1</label>
+                            <input className="input" value={form.shipAddressLine1} onChange={sf('shipAddressLine1')} />
+                          </div>
+                          <div className="lg:col-span-2">
+                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">ADDRESS LINE 2</label>
+                            <input className="input" value={form.shipAddressLine2} onChange={sf('shipAddressLine2')} />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">CITY</label>
+                            <input className="input" value={form.shipCity} onChange={sf('shipCity')} />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">STATE</label>
+                            <input className="input" value={form.shipState} onChange={sf('shipState')} />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">PINCODE</label>
+                            <input className="input" value={form.shipPincode} onChange={sf('shipPincode')} />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">GSTIN</label>
+                            <input className="input font-mono uppercase" value={form.shipGSTIN} onChange={sf('shipGSTIN')} />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">CONTACT PERSON</label>
+                            <input className="input" value={form.shipContactPerson} onChange={sf('shipContactPerson')} />
+                          </div>
+                          <div>
+                            <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">MOBILE</label>
+                            <input className="input" value={form.shipMobile} onChange={sf('shipMobile')} />
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+              </div>
+
               <div>
                 <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">NOTES</label>
                 <textarea className="input" rows={2} value={form.notes} onChange={sf('notes')} placeholder="Optional notes…" />

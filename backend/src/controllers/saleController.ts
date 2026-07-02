@@ -60,8 +60,88 @@ const saleSchema = z.object({
   customerAddress: z.string().optional().default(''),
   deliveryAddress: z.string().optional().default(''),
 
+  // ── Professional GST Invoice Template — additive-only, all optional ──
+  // Nothing here is required; omitting them entirely (as every existing
+  // caller does today) behaves exactly as before.
+  referenceNo: z.string().optional().nullable(),
+  referenceDate: z.string().optional().nullable(),
+  deliveryNote: z.string().optional().nullable(),
+  buyerOrderNo: z.string().optional().nullable(),
+  buyerOrderDate: z.string().optional().nullable(),
+  dispatchDocNo: z.string().optional().nullable(),
+  deliveryNoteDate: z.string().optional().nullable(),
+  modeOfPayment: z.string().optional().nullable(),
+  otherReference: z.string().optional().nullable(),
+  transportName: z.string().optional().nullable(),
+  lrNumber: z.string().optional().nullable(),
+  destination: z.string().optional().nullable(),
+  vehicleNumber: z.string().optional().nullable(),
+  ewayBillNo: z.string().optional().nullable(),
+  termsOfDelivery: z.string().optional().nullable(),
+
+  shipCompanyName: z.string().optional().nullable(),
+  shipAddressLine1: z.string().optional().nullable(),
+  shipAddressLine2: z.string().optional().nullable(),
+  shipCity: z.string().optional().nullable(),
+  shipState: z.string().optional().nullable(),
+  shipPincode: z.string().optional().nullable(),
+  shipGSTIN: z.string().optional().nullable(),
+  shipContactPerson: z.string().optional().nullable(),
+  shipMobile: z.string().optional().nullable(),
+  useBuyerAsShipping: z.boolean().optional().nullable(),
+
   items: z.array(saleItemSchema).min(1),
 });
+
+// ── Helpers for the new optional GST-invoice fields ────────────────
+// Converts a possibly-empty date string to a Date, or null. Never throws
+// on blank/undefined input (all these fields are optional).
+function toDateOrNull(v: string | null | undefined): Date | null {
+  if (!v || !v.trim()) return null;
+  const d = new Date(v);
+  return isNaN(d.getTime()) ? null : d;
+}
+
+// Trims a possibly-empty string to null (keeps nullable columns clean).
+function toTextOrNull(v: string | null | undefined): string | null {
+  if (v === null || v === undefined) return null;
+  const t = v.trim();
+  return t === '' ? null : t;
+}
+
+// Builds the shared "extra fields" object used by both createSale and
+// updateSale so the two stay in sync. Ship-to address lines and GSTIN are
+// encrypted the same way customerAddress/deliveryAddress/companyGstin are.
+function buildGstExtrasData(d: z.infer<typeof saleSchema>) {
+  return {
+    referenceNo: toTextOrNull(d.referenceNo),
+    referenceDate: toDateOrNull(d.referenceDate),
+    deliveryNote: toTextOrNull(d.deliveryNote),
+    buyerOrderNo: toTextOrNull(d.buyerOrderNo),
+    buyerOrderDate: toDateOrNull(d.buyerOrderDate),
+    dispatchDocNo: toTextOrNull(d.dispatchDocNo),
+    deliveryNoteDate: toDateOrNull(d.deliveryNoteDate),
+    modeOfPayment: toTextOrNull(d.modeOfPayment),
+    otherReference: toTextOrNull(d.otherReference),
+    transportName: toTextOrNull(d.transportName),
+    lrNumber: toTextOrNull(d.lrNumber),
+    destination: toTextOrNull(d.destination),
+    vehicleNumber: toTextOrNull(d.vehicleNumber),
+    ewayBillNo: toTextOrNull(d.ewayBillNo),
+    termsOfDelivery: toTextOrNull(d.termsOfDelivery),
+
+    shipCompanyName: toTextOrNull(d.shipCompanyName),
+    shipAddressLine1: encryptIfPresent(d.shipAddressLine1),
+    shipAddressLine2: encryptIfPresent(d.shipAddressLine2),
+    shipCity: toTextOrNull(d.shipCity),
+    shipState: toTextOrNull(d.shipState),
+    shipPincode: toTextOrNull(d.shipPincode),
+    shipGSTIN: encryptIfPresent(d.shipGSTIN?.toUpperCase()),
+    shipContactPerson: toTextOrNull(d.shipContactPerson),
+    shipMobile: toTextOrNull(d.shipMobile),
+    useBuyerAsShipping: d.useBuyerAsShipping ?? null,
+  };
+}
 
 const paymentSchema = z.object({
   amount: z.number().positive(),
@@ -97,6 +177,12 @@ const decrypt = (s: any) => ({
   companyGstin: safeDecrypt(s.companyGstin || ''),
   customerAddress: safeDecrypt(s.customerAddress || ''),
   deliveryAddress: safeDecrypt(s.deliveryAddress || ''),
+
+  // Professional GST Invoice Template — additive fields (undefined-safe:
+  // legacy rows simply have these as null/undefined and decrypt to '').
+  shipAddressLine1: safeDecrypt(s.shipAddressLine1 || ''),
+  shipAddressLine2: safeDecrypt(s.shipAddressLine2 || ''),
+  shipGSTIN: safeDecrypt(s.shipGSTIN || ''),
 
   totalPurchaseCost: decryptFinancialWithFallback(
     s.totalPurchaseCostEnc,
@@ -255,6 +341,8 @@ profitPct: data.profitPct,
 grossProfitEnc: encryptFinancialData(
   data.grossProfit
 ),
+        // Professional GST Invoice Template — additive-only, all optional.
+        ...buildGstExtrasData(parsed.data),
         items: {
   create: items.map(item => ({
     materialName: item.materialName,
@@ -330,6 +418,16 @@ export async function updateSale(req: Request, res: Response, next: NextFunction
       isInterState,
       customerAddress,
       deliveryAddress,
+      // Professional GST Invoice Template — additive-only fields, pulled
+      // out of the `...data` spread below so they can be converted
+      // (date strings → Date) and encrypted (ship address/GSTIN) the
+      // same way customerAddress/deliveryAddress/companyGstin already are.
+      referenceNo, referenceDate, deliveryNote, buyerOrderNo, buyerOrderDate,
+      dispatchDocNo, deliveryNoteDate, modeOfPayment, otherReference,
+      transportName, lrNumber, destination, vehicleNumber, ewayBillNo,
+      termsOfDelivery, shipCompanyName, shipAddressLine1, shipAddressLine2,
+      shipCity, shipState, shipPincode, shipGSTIN, shipContactPerson,
+      shipMobile, useBuyerAsShipping,
       ...data
     } = parsed.data;
 
@@ -347,6 +445,8 @@ export async function updateSale(req: Request, res: Response, next: NextFunction
         invoiceDate: new Date(data.invoiceDate),
         dueDate: dueDate ? new Date(dueDate) : null,
         companyGstin: encryptIfPresent(companyGstin?.toUpperCase()),
+        // Professional GST Invoice Template — additive-only, all optional.
+        ...buildGstExtrasData(parsed.data),
         // `...data` above already includes plaintext totalPurchaseCost and
         // grossProfit (they were never destructured out), so only the
         // *Enc columns need to be set explicitly here. This mirrors the

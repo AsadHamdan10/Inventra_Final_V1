@@ -22,6 +22,7 @@ export const ROW_HEIGHT_PX: Record<string, number> = {
   boxed:      24,   // T08
   gstdetail:  24,   // T09
   executive:  26,   // T10
+  professionalgst: 22, // T11
 };
 
 // ── How much vertical space the header consumes per template (px) ─
@@ -37,6 +38,7 @@ export const HEADER_HEIGHT_PX: Record<string, number> = {
   boxed:     220,
   gstdetail: 250,
   executive: 260,
+  professionalgst: 300,
 };
 
 // ── Footer/totals block (only last page) ─────────────────────
@@ -52,6 +54,7 @@ export const FOOTER_HEIGHT_PX: Record<string, number> = {
   boxed:     320,
   gstdetail: 380,
   executive: 360,
+  professionalgst: 340,
 };
 
 // ── Page margins ─────────────────────────────────────────────

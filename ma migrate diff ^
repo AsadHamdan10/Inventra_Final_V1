@@ -1,0 +1,432 @@
+warning: in the working copy of 'backend/prisma/schema.prisma', LF will be replaced by CRLF the next time Git touches it
+[1mdiff --git a/backend/prisma/schema.prisma b/backend/prisma/schema.prisma[m
+[1mindex 8532069..0c77a26 100644[m
+[1m--- a/backend/prisma/schema.prisma[m
+[1m+++ b/backend/prisma/schema.prisma[m
+[36m@@ -1,9 +1,3 @@[m
+[31m-// ============================================================[m
+[31m-// Inventra — Simplifying Business Operations[m
+[31m-// Prisma Schema v1.0[m
+[31m-// Zero-Trust Multi-Tenant SaaS Database Design[m
+[31m-// ============================================================[m
+[31m-[m
+ generator client {[m
+   provider = "prisma-client-js"[m
+ }[m
+[36m@@ -13,75 +7,54 @@[m [mdatasource db {[m
+   url      = env("DATABASE_URL")[m
+ }[m
+ [m
+[31m-// ── USERS (Tenants + Staff) ────────────────────────────────────[m
+ model User {[m
+[31m-  id                  Int      @id @default(autoincrement())[m
+[31m-  companyName         String   @map("company_name") @db.VarChar(200)[m
+[31m-  username            String   @unique @db.VarChar(100)[m
+[31m-  email               String   @unique @db.VarChar(150)[m
+[31m-  mobile              String?  @db.Text // AES-256-GCM encrypted[m
+[31m-  mobileHash          String?  @unique @map("mobile_hash") @db.VarChar(64) // HMAC blind index for uniqueness lookup[m
+[31m-  password            String   @db.VarChar(255) // bcrypt hash ONLY[m
+[31m-  role                Role     @default(admin)[m
+[31m-  status              Status   @default(pending)[m
+[31m-  forcePasswordChange Boolean  @default(false) @map("force_password_change")[m
+[31m-  // Company Profile Fields — sensitive fields below are AES-256-GCM encrypted at rest.[m
+[31m-  // gstin/panNumber/mobile additionally carry a deterministic HMAC "blind index"[m
+[31m-  // column (see utils/crypto.ts: blindIndex()) so uniqueness checks and lookups[m
+[31m-  // can still run as fast indexed equality queries without decrypting at query time.[m
+[31m-  gstin               String?  @db.Text // AES-256-GCM encrypted[m
+[31m-  gstinHash           String?  @unique @map("gstin_hash") @db.VarChar(64)[m
+[31m-  addressLine1        String?  @map("address_line1") @db.Text // AES-256-GCM encrypted[m
+[31m-  addressLine2        String?  @map("address_line2") @db.Text // AES-256-GCM encrypted[m
+[31m-  city                String?  @db.Text // AES-256-GCM encrypted[m
+[31m-  district            String?  @db.Text // AES-256-GCM encrypted[m
+[31m-  state               String?  @db.Text // AES-256-GCM encrypted[m
+[31m-  pincode             String?  @db.Text // AES-256-GCM encrypted[m
+[31m-  country             String?  @default("India") @db.VarChar(100)[m
+[31m-  panNumber           String?  @map("pan_number") @db.Text // AES-256-GCM encrypted[m
+[31m-  panNumberHash       String?  @unique @map("pan_number_hash") @db.VarChar(64)[m
+[31m-  profileComplete     Boolean  @default(false) @map("profile_complete")[m
+[31m-  createdAt           DateTime @default(now()) @map("created_at")[m
+[31m-  updatedAt           DateTime @updatedAt @map("updated_at")[m
+[31m-[m
+[31m-  // Relations[m
+[31m-  refreshTokens   RefreshToken[][m
+[31m-  auditLogs       AuditLog[][m
+[31m-  supportTokens   SupportToken[][m
+[31m-  tenantSequences TenantSequence[][m
+[31m-  vendors         Vendor[][m
+[31m-  customers       Customer[][m
+[31m-  materials       Material[][m
+[31m-  purchases       Purchase[][m
+[31m-  sales           Sale[][m
+[31m-  gstPayments     GstPayment[][m
+[31m-  gstInputBills   GstInputBill[][m
+[31m-  gstAdjustments  GstAdjustment[][m
+[31m-  gstItcLedger    GstItcLedger[][m
+[31m-  expenses        Expense[][m
+[31m-  investors       Investor[][m
+[31m-  intermediaries  Intermediary[][m
+[31m-  bankAccounts    BankAccount[][m
+[31m-  bankStatements  BankStatement[][m
+[31m-  notifications   Notification[][m
+[32m+[m[32m  id                  Int              @id @default(autoincrement())[m
+[32m+[m[32m  companyName         String           @map("company_name") @db.VarChar(200)[m
+[32m+[m[32m  username            String           @unique @db.VarChar(100)[m
+[32m+[m[32m  email               String           @unique @db.VarChar(150)[m
+[32m+[m[32m  mobile              String?[m
+[32m+[m[32m  mobileHash          String?          @unique @map("mobile_hash") @db.VarChar(64)[m
+[32m+[m[32m  password            String           @db.VarChar(255)[m
+[32m+[m[32m  role                Role             @default(admin)[m
+[32m+[m[32m  status              Status           @default(pending)[m
+[32m+[m[32m  forcePasswordChange Boolean          @default(false) @map("force_password_change")[m
+[32m+[m[32m  gstin               String?[m
+[32m+[m[32m  gstinHash           String?          @unique @map("gstin_hash") @db.VarChar(64)[m
+[32m+[m[32m  addressLine1        String?          @map("address_line1")[m
+[32m+[m[32m  addressLine2        String?          @map("address_line2")[m
+[32m+[m[32m  city                String?[m
+[32m+[m[32m  district            String?[m
+[32m+[m[32m  state               String?[m
+[32m+[m[32m  pincode             String?[m
+[32m+[m[32m  country             String?          @default("India") @db.VarChar(100)[m
+[32m+[m[32m  panNumber           String?          @map("pan_number")[m
+[32m+[m[32m  panNumberHash       String?          @unique @map("pan_number_hash") @db.VarChar(64)[m
+[32m+[m[32m  profileComplete     Boolean          @default(false) @map("profile_complete")[m
+[32m+[m[32m  createdAt           DateTime         @default(now()) @map("created_at")[m
+[32m+[m[32m  updatedAt           DateTime         @updatedAt @map("updated_at")[m
+[32m+[m[32m  auditLogs           AuditLog[][m
+[32m+[m[32m  bankAccounts        BankAccount[][m
+[32m+[m[32m  bankStatements      BankStatement[][m
+[32m+[m[32m  customers           Customer[][m
+[32m+[m[32m  expenses            Expense[][m
+[32m+[m[32m  gstAdjustments      GstAdjustment[][m
+[32m+[m[32m  gstInputBills       GstInputBill[][m
+[32m+[m[32m  gstItcLedger        GstItcLedger[][m
+[32m+[m[32m  gstPayments         GstPayment[][m
+[32m+[m[32m  intermediaries      Intermediary[][m
+[32m+[m[32m  investors           Investor[][m
+[32m+[m[32m  materials           Material[][m
+[32m+[m[32m  notifications       Notification[][m
+[32m+[m[32m  purchases           Purchase[][m
+[32m+[m[32m  refreshTokens       RefreshToken[][m
+[32m+[m[32m  sales               Sale[][m
+[32m+[m[32m  supportTokens       SupportToken[][m
+[32m+[m[32m  tenantSequences     TenantSequence[][m
+[32m+[m[32m  vendors             Vendor[][m
+ [m
+   @@map("users")[m
+ }[m
+ [m
+[31m-enum Role {[m
+[31m-  super_admin[m
+[31m-  admin[m
+[31m-  staff[m
+[31m-}[m
+[31m-[m
+[31m-enum Status {[m
+[31m-  pending[m
+[31m-  approved[m
+[31m-  rejected[m
+[31m-  suspended[m
+[31m-}[m
+[31m-[m
+[31m-// ── REFRESH TOKENS ─────────────────────────────────────────────[m
+ model RefreshToken {[m
+   id        Int       @id @default(autoincrement())[m
+   userId    Int       @map("user_id")[m
+[36m@@ -89,25 +62,22 @@[m [mmodel RefreshToken {[m
+   expiresAt DateTime  @map("expires_at")[m
+   createdAt DateTime  @default(now()) @map("created_at")[m
+   revokedAt DateTime? @map("revoked_at")[m
+[31m-[m
+[31m-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)[m
+[32m+[m[32m  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)[m
+ [m
+   @@index([userId])[m
+   @@index([token])[m
+   @@map("refresh_tokens")[m
+ }[m
+ [m
+[31m-// ── AUDIT LOGS ─────────────────────────────────────────────────[m
+ model AuditLog {[m
+   id        Int      @id @default(autoincrement())[m
+   userId    Int      @default(0) @map("user_id")[m
+   action    String   @db.VarChar(100)[m
+[31m-  details   String?  @db.Text[m
+[32m+[m[32m  details   String?[m
+   ipAddress String?  @map("ip_address") @db.VarChar(45)[m
+   userAgent String?  @map("user_agent") @db.VarChar(255)[m
+   createdAt DateTime @default(now()) @map("created_at")[m
+[31m-[m
+[31m-  user User? @relation(fields: [userId], references: [id], onDelete: SetDefault)[m
+[32m+[m[32m  user      User     @relation(fields: [userId], references: [id], onDelete: SetDefault)[m
+ [m
+   @@index([userId])[m
+   @@index([action])[m
+[36m@@ -115,7 +85,6 @@[m [mmodel AuditLog {[m
+   @@map("audit_logs")[m
+ }[m
+ [m
+[31m-// ── SUPPORT TOKENS ─────────────────────────────────────────────[m
+ model SupportToken {[m
+   id        Int       @id @default(autoincrement())[m
+   userId    Int       @map("user_id")[m
+[36m@@ -124,8 +93,7 @@[m [mmodel SupportToken {[m
+   expiresAt DateTime  @map("expires_at")[m
+   usedAt    DateTime? @map("used_at")[m
+   createdAt DateTime  @default(now()) @map("created_at")[m
+[31m-[m
+[31m-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)[m
+[32m+[m[32m  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)[m
+ [m
+   @@index([userId])[m
+   @@index([token])[m
+[36m@@ -133,63 +101,56 @@[m [mmodel SupportToken {[m
+   @@map("support_tokens")[m
+ }[m
+ [m
+[31m-// ── TENANT SEQUENCES ───────────────────────────────────────────[m
+ model TenantSequence {[m
+   id     Int    @id @default(autoincrement())[m
+   userId Int    @map("user_id")[m
+   prefix String @db.VarChar(20)[m
+   seq    Int    @default(0)[m
+[31m-[m
+[31m-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)[m
+[32m+[m[32m  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)[m
+ [m
+   @@unique([userId, prefix])[m
+   @@index([userId])[m
+   @@map("tenant_sequences")[m
+ }[m
+ [m
+[31m-// ── VENDORS ────────────────────────────────────────────────────[m
+ model Vendor {[m
+[31m-  id          Int      @id @default(autoincrement())[m
+[31m-  userId      Int      @map("user_id")[m
+[31m-  vendorName  String   @map("vendor_name") @db.VarChar(200)[m
+[31m-  vendorGstin String?  @map("vendor_gstin") @db.Text // AES-256 encrypted[m
+[31m-  contact     String?  @db.Text // AES-256 encrypted[m
+[31m-  phone       String?  @db.Text // AES-256 encrypted[m
+[31m-  email       String?  @db.Text // AES-256 encrypted[m
+[31m-  address     String?  @db.Text // AES-256 encrypted[m
+[31m-  createdAt   DateTime @default(now()) @map("created_at")[m
+[31m-  updatedAt   DateTime @updatedAt @map("updated_at")[m
+[31m-[m
+[31m-  user      User       @relation(fields: [userId], references: [id], onDelete: Cascade)[m
+[31m-  purchases Purchase[][m
+[32m+[m[32m  id          Int        @id @default(autoincrement())[m
+[32m+[m[32m  userId      Int        @map("user_id")[m
+[32m+[m[32m  vendorName  String     @map("vendor_name") @db.VarChar(200)[m
+[32m+[m[32m  vendorGstin String?    @map("vendor_gstin")[m
+[32m+[m[32m  contact     String?[m
+[32m+[m[32m  phone       String?[m
+[32m+[m[32m  email       String?[m
+[32m+[m[32m  address     String?[m
+[32m+[m[32m  createdAt   DateTime   @default(now()) @map("created_at")[m
+[32m+[m[32m  updatedAt   DateTime   @updatedAt @map("updated_at")[m
+[32m+[m[32m  purchases   Purchase[][m
+[32m+[m[32m  user        User       @relation(fields: [userId], references: [id], onDelete: Cascade)[m
+ [m
+   @@index([userId])[m
+   @@map("vendors")[m
+ }[m
+ [m
+[31m-// ── CUSTOMERS ──────────────────────────────────────────────────[m
+ model Customer {[m
+   id              Int      @id @default(autoincrement())[m
+   userId          Int      @map("user_id")[m
+   companyName     String   @map("company_name") @db.VarChar(200)[m
+[31m-  gstin           String?  @db.Text // AES-256 encrypted[m
+[31m-  contact         String?  @db.Text // AES-256 encrypted[m
+[31m-  phone           String?  @db.Text // AES-256 encrypted[m
+[31m-  email           String?  @db.Text // AES-256 encrypted[m
+[31m-  address         String?  @db.Text // AES-256 encrypted[m
+[31m-  deliveryAddress String?  @map("delivery_address") @db.Text[m
+[32m+[m[32m  gstin           String?[m
+[32m+[m[32m  contact         String?[m
+[32m+[m[32m  phone           String?[m
+[32m+[m[32m  email           String?[m
+[32m+[m[32m  address         String?[m
+[32m+[m[32m  deliveryAddress String?  @map("delivery_address")[m
+   paymentTerms    Int      @default(30) @map("payment_terms")[m
+   createdAt       DateTime @default(now()) @map("created_at")[m
+   updatedAt       DateTime @updatedAt @map("updated_at")[m
+[31m-[m
+[31m-  user  User   @relation(fields: [userId], references: [id], onDelete: Cascade)[m
+[31m-  sales Sale[][m
+[32m+[m[32m  user            User     @relation(fields: [userId], references: [id], onDelete: Cascade)[m
+[32m+[m[32m  sales           Sale[][m
+ [m
+   @@index([userId])[m
+   @@map("customers")[m
+ }[m
+ [m
+[31m-// ── MATERIALS ──────────────────────────────────────────────────[m
+ model Material {[m
+   id           Int      @id @default(autoincrement())[m
+   userId       Int      @map("user_id")[m
+[36m@@ -198,39 +159,36 @@[m [mmodel Material {[m
+   unit         String   @default("Nos") @db.VarChar(50)[m
+   createdAt    DateTime @default(now()) @map("created_at")[m
+   updatedAt    DateTime @updatedAt @map("updated_at")[m
+[31m-[m
+[31m-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)[m
+[32m+[m[32m  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)[m
+ [m
+   @@index([userId])[m
+   @@map("materials")[m
+ }[m
+ [m
+[31m-// ── PURCHASES ──────────────────────────────────────────────────[m
+ model Purchase {[m
+[31m-  id           Int      @id @default(autoincrement())[m
+[31m-  userId       Int      @map("user_id")[m
+[31m-  billNo       String   @map("bill_no") @db.VarChar(100)[m
+[31m-  billDate     DateTime @map("bill_date") @db.Date[m
+[31m-  vendorId     Int?     @map("vendor_id")[m
+[31m-  vendorName   String   @map("vendor_name") @db.VarChar(200)[m
+[31m-  vendorGstin  String?  @map("vendor_gstin") @db.Text // AES-256 encrypted[m
+[31m-  otherExpense Decimal  @default(0) @map("other_expense") @db.Decimal(15, 2)[m
+[31m-  roundOff     Decimal  @default(0) @map("round_off") @db.Decimal(6, 2)[m
+[31m-  paymentPaid  Decimal  @default(0) @map("payment_paid") @db.Decimal(15, 2)[m
+[31m-  totalTaxable Decimal  @default(0) @map("total_taxable") @db.Decimal(15, 2)[m
+[31m-  totalGst     Decimal  @default(0) @map("total_gst") @db.Decimal(15, 2)[m
+[31m-  igstAmount   Decimal  @default(0) @map("igst_amount") @db.Decimal(15, 2)[m
+[31m-  cgstAmount   Decimal  @default(0) @map("cgst_amount") @db.Decimal(15, 2)[m
+[31m-  sgstAmount   Decimal  @default(0) @map("sgst_amount") @db.Decimal(15, 2)[m
+[31m-  grandTotal   Decimal  @default(0) @map("grand_total") @db.Decimal(15, 2)[m
+[31m-  notes        String?  @db.Text[m
+[31m-  createdAt    DateTime @default(now()) @map("created_at")[m
+[31m-  updatedAt    DateTime @updatedAt @map("updated_at")[m
+[31m-[m
+[31m-  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)[m
+[31m-  vendor          Vendor?          @relation(fields: [vendorId], references: [id], onDelete: SetNull)[m
+[31m-  items           PurchaseItem[][m
+[32m+[m[32m  id              Int              @id @default(autoincrement())[m
+[32m+[m[32m  userId          Int              @map("user_id")[m
+[32m+[m[32m  billNo          String           @map("bill_no") @db.VarChar(100)[m
+[32m+[m[32m  billDate        DateTime         @map("bill_date") @db.Date[m
+[32m+[m[32m  vendorId        Int?             @map("vendor_id")[m
+[32m+[m[32m  vendorName      String           @map("vendor_name") @db.VarChar(200)[m
+[32m+[m[32m  vendorGstin     String?          @map("vendor_gstin")[m
+[32m+[m[32m  otherExpense    Decimal          @default(0) @map("other_expense") @db.Decimal(15, 2)[m
+[32m+[m[32m  roundOff        Decimal          @default(0) @map("round_off") @db.Decimal(6, 2)[m
+[32m+[m[32m  paymentPaid     Decimal          @default(0) @map("payment_paid") @db.Decimal(15, 2)[m
+[32m+[m[32m  totalTaxable    Decimal          @default(0) @map("total_taxable") @db.Decimal(15, 2)[m
+[32m+[m[32m  totalGst        Decimal          @default(0) @map("total_gst") @db.Decimal(15, 2)[m
+[32m+[m[32m  igstAmount      Decimal          @default(0) @map("igst_amount") @db.Decimal(15, 2)[m
+[32m+[m[32m  cgstAmount      Decimal          @default(0) @map("cgst_amount") @db.Decimal(15, 2)[m
+[32m+[m[32m  sgstAmount      Decimal          @default(0) @map("sgst_amount") @db.Decimal(15, 2)[m
+[32m+[m[32m  grandTotal      Decimal          @default(0) @map("grand_total") @db.Decimal(15, 2)[m
+[32m+[m[32m  notes           String?[m
+[32m+[m[32m  createdAt       DateTime         @default(now()) @map("created_at")[m
+[32m+[m[32m  updatedAt       DateTime         @updatedAt @map("updated_at")[m
+   PayablePayments PayablePayment[][m
+[32m+[m[32m  items           PurchaseItem[][m
+[32m+[m[32m  user            User             @relation(fields: [userId], references: [id], onDelete: Cascade)[m
+[32m+[m[32m  vendor          Vendor?          @relation(fields: [vendorId], references: [id])[m
+ [m
+   @@index([userId])[m
+   @@index([billDate])[m
+[36m@@ -239,111 +197,98 @@[m [mmodel Purchase {[m
+ }[m
+ [m
+ model PurchaseItem {[m
+[31m-  id           Int     @id @default(autoincrement())[m
+[31m-  purchaseId   Int     @map("purchase_id")[m
+[31m-  materialName String  @map("material_name") @db.VarChar(200)[m
+[31m-  hsnCode      String? @map("hsn_code") @db.VarChar(20)[m
+[31m-  quantity     Decimal @db.Decimal(15, 3)[m
+[31m-  purchaseRate Decimal? @map("purchase_rate") @db.Decimal(15, 4)[m
+[31m-[m
+[31m-  // Phase 3 Financial Encryption[m
+[31m-  purchaseRateEnc String? @map("purchase_rate_enc") @db.Text[m
+[31m-  gstPercent      Decimal @default(0) @map("gst_percent") @db.Decimal(6, 2)[m
+[31m-  taxableAmount   Decimal @default(0) @map("taxable_amount") @db.Decimal(15, 2)[m
+[31m-  gstAmount       Decimal @default(0) @map("gst_amount") @db.Decimal(15, 2)[m
+[31m-  itemTotal       Decimal @default(0) @map("item_total") @db.Decimal(15, 2)[m
+[31m-[m
+[31m-  purchase Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)[m
+[32m+[m[32m  id              Int      @id @default(autoincrement())[m
+[32m+[m[32m  purchaseId      Int      @map("purchase_id")[m
+[32m+[m[32m  materialName    String   @map("material_name") @db.VarChar(200)[m
+[32m+[m[32m  hsnCode         String?  @map("hsn_code") @db.VarChar(20)[m
+[32m+[m[32m  quantity        Decimal  @db.Decimal(15, 3)[m
+[32m+[m[32m  purchaseRate    Decimal? @map("purchase_rate") @db.Decimal(15, 4)[m
+[32m+[m[32m  gstPercent      Decimal  @default(0) @map("gst_percent") @db.Decimal(6, 2)[m
+[32m+[m[32m  taxableAmount   Decimal  @default(0) @map("taxable_amount") @db.Decimal(15, 2)[m
+[32m+[m[32m  gstAmount       Decimal  @default(0) @map("gst_amount") @db.Decimal(15, 2)[m
+[32m+[m[32m  itemTotal       Decimal  @default(0) @map("item_total") @db.Decimal(15, 2)[m
+[32m+[m[32m  purchaseRateEnc String?  @map("purchase_rate_enc")[m
+[32m+[m[32m  purchase        Purchase @relation(fields: [purchaseId], references: [id], onDelete: Cascade)[m
+ [m
+   @@index([purchaseId])[m
+   @@map("purchase_items")[m
+ }[m
+ [m
+[31m-// ── GST INPUT BILLS ────────────────────────────────────────────[m
+ model GstInputBill {[m
+   id          Int      @id @default(autoincrement())[m
+   userId      Int      @map("user_id")[m
+   billNo      String   @map("bill_no") @db.VarChar(100)[m
+   billDate    DateTime @map("bill_date") @db.Date[m
+   sellerName  String   @map("seller_name") @db.VarChar(200)[m
+[31m-  sellerGstin String?  @map("seller_gstin") @db.Text // AES-256 encrypted[m
+[32m+[m[32m  sellerGstin String?  @map("seller_gstin")[m
+   gstAmount   Decimal  @default(0) @map("gst_amount") @db.Decimal(15, 2)[m
+   igstAmount  Decimal  @default(0) @map("igst_amount") @db.Decimal(15, 2)[m
+   cgstAmount  Decimal  @default(0) @map("cgst_amount") @db.Decimal(15, 2)[m
+   sgstAmount  Decimal  @default(0) @map("sgst_amount") @db.Decimal(15, 2)[m
+   amountPaid  Decimal  @default(0) @map("amount_paid") @db.Decimal(15, 2)[m
+   category    String   @default("General") @db.VarChar(100)[m
+[31m-  notes       String?  @db.Text[m
+[32m+[m[32m  notes       String?[m
+   createdAt   DateTime @default(now()) @map("created_at")[m
+   updatedAt   DateTime @updatedAt @map("updated_at")[m
+[31m-[m
+[31m-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)[m
+[32m+[m[32m  user        User     @relation(fields: [userId], references: [id], onDelete: Cascade)[m
+ [m
+   @@index([userId])[m
+   @@map("gst_input_bills")[m
+ }[m
+ [m
+[31m-// ── GST ADJUSTMENTS ────────────────────────────────────────────[m
+ model GstAdjustment {[m
+   id            Int      @id @default(autoincrement())[m
+   userId        Int      @map("user_id")[m
+   sellerName    String   @map("seller_name") @db.VarChar(200)[m
+[31m-  sellerGstin   String?  @map("seller_gstin") @db.Text // AES-256 encrypted[m
+[32m+[m[32m  sellerGstin   String?  @map("seller_gstin")[m
+   gstBillAmount Decimal  @default(0) @map("gst_bill_amount") @db.Decimal(15, 2)[m
+   pctPaid       Decimal  @default(0) @map("pct_paid") @db.Decimal(6, 2)[m
+   amountPaid    Decimal  @default(0) @map("amount_paid") @db.Decimal(15, 2)[m
+   profitAmount  Decimal  @default(0) @map("profit_amount") @db.Decimal(15, 2)[m
+   txnDate       DateTime @map("txn_date") @db.Date[m
+[31m-  notes         String?  @db.Text[m
+[32m+[m[32m  notes         String?[m
+   createdAt     DateTime @default(now()) @map("created_at")[m
+   updatedAt     DateTime @updatedAt @map("updated_at")[m
+[31m-[m
+[31m-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)[m
+[32m+[m[32m  user          User     @relation(fields: [userId], references: [id], onDelete: Cascade)[m
+ [m
+   @@index([userId])[m
+   @@map("gst_adjustments")[m
+ }[m
+ [m
+[31m-// ── SALES ──────────────────────────────────────────────────────[m
+ model Sale {[m
+[31m-  id                Int       @id @default(autoincrement())[m
+[31m-  userId            Int       @map("user_id")[m
+[31m-  invoiceNo         String    @map("invoice_no") @db.VarChar(100)[m
+[31m-  invoiceDate       DateTime  @map("invoice_date") @db.Date[m
+[31m-  customerId        Int?      @map("customer_id")[m
+[31m-  companyName       String    @map("company_name") @db.VarChar(200)[m
+[31m-  companyGstin      String?   @map("company_gstin") @db.Text // AES-256 encrypted[m
+[31m-  customerAddress   String?   @map("customer_address") @db.Text[m
+[31m-  paymentTerms      Int       @default(30) @map("payment_terms")[m
+[31m-  poNo              String?   @map("po_no") @db.VarChar(100)[m
+[31m-  otherExpense      Decimal   @default(0) @map("other_expense") @db.Decimal(15, 2)[m
+[31m-  roundOff          Decimal   @default(0) @map("round_off") @db.Decimal(6, 2)[m
+[31m-  paymentReceived   Decimal   @default(0) @map("payment_received") @db.Decimal(15, 2)[m
+[31m-  dueDate           DateTime? @map("due_date") @db.Da

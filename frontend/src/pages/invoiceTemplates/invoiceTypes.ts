@@ -85,6 +85,55 @@ export interface InvoiceData {
   // Footer
   termsAndConditions?: string;
   notes?: string;
+
+  // ── Professional GST Invoice Template — additive-only, all optional ──
+  // Populated only when a user fills in the "Additional Invoice Details"
+  // section. Every existing template ignores these fields entirely.
+  referenceNo?: string;
+  referenceDate?: string;
+  deliveryNote?: string;
+  buyerOrderNo?: string;
+  buyerOrderDate?: string;
+  dispatchDocNo?: string;
+  deliveryNoteDate?: string;
+  modeOfPayment?: string;
+  otherReference?: string;
+  transportName?: string;
+  lrNumber?: string;
+  destination?: string;
+  vehicleNumber?: string;
+  ewayBillNo?: string;
+  termsOfDelivery?: string;
+
+  // Ship To (Consignee) — null/undefined means "same as buyer".
+  useBuyerAsShipping?: boolean;
+  shipTo?: ShipToInfo;
+}
+
+export interface ShipToInfo {
+  companyName?: string;
+  addressLine1?: string;
+  addressLine2?: string;
+  city?: string;
+  state?: string;
+  pincode?: string;
+  gstin?: string;
+  contactPerson?: string;
+  mobile?: string;
+}
+
+// ── Ship-to address as a single multi-line string ──────────────
+// Mirrors companyAddressLines() below so ShipTo obeys the same
+// addressAlignment / addressStyle settings via <AddressBlock>.
+export function shipToAddressLines(ship: ShipToInfo): string {
+  return [
+    ship.addressLine1,
+    ship.addressLine2,
+    [ship.city, ship.state].filter(Boolean).join(', '),
+    ship.pincode,
+  ]
+    .filter(Boolean)
+    .join('\n');
 }
 
 // ── Convert sales record → InvoiceData ───────────────────────
@@ -124,6 +173,39 @@ branchName: bank?.branchName,
 
 amountInWords: numberToWords(+sale.grandTotal),
 notes: sale.notes,
+
+    // ── Professional GST Invoice Template — additive-only ───────
+    // All undefined/optional; every field falls back gracefully so
+    // existing templates (which never read these) are unaffected.
+    referenceNo: sale.referenceNo || undefined,
+    referenceDate: sale.referenceDate || undefined,
+    deliveryNote: sale.deliveryNote || undefined,
+    buyerOrderNo: sale.buyerOrderNo || undefined,
+    buyerOrderDate: sale.buyerOrderDate || undefined,
+    dispatchDocNo: sale.dispatchDocNo || undefined,
+    deliveryNoteDate: sale.deliveryNoteDate || undefined,
+    modeOfPayment: sale.modeOfPayment || undefined,
+    otherReference: sale.otherReference || undefined,
+    transportName: sale.transportName || undefined,
+    lrNumber: sale.lrNumber || undefined,
+    destination: sale.destination || undefined,
+    vehicleNumber: sale.vehicleNumber || undefined,
+    ewayBillNo: sale.ewayBillNo || undefined,
+    termsOfDelivery: sale.termsOfDelivery || undefined,
+    useBuyerAsShipping: sale.useBuyerAsShipping ?? true,
+    shipTo: sale.shipCompanyName || sale.shipAddressLine1 || sale.shipGSTIN
+      ? {
+          companyName: sale.shipCompanyName || undefined,
+          addressLine1: sale.shipAddressLine1 || undefined,
+          addressLine2: sale.shipAddressLine2 || undefined,
+          city: sale.shipCity || undefined,
+          state: sale.shipState || undefined,
+          pincode: sale.shipPincode || undefined,
+          gstin: sale.shipGSTIN || undefined,
+          contactPerson: sale.shipContactPerson || undefined,
+          mobile: sale.shipMobile || undefined,
+        }
+      : undefined,
   };
 }
 

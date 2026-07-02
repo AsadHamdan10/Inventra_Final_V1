@@ -9,7 +9,7 @@ const KEYS = {
   purchase: 'purchaseInvoiceTemplate',
 } as const;
 
-export const TEMPLATE_IDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10] as const;
+export const TEMPLATE_IDS = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11] as const;
 export type TemplateId = (typeof TEMPLATE_IDS)[number];
 
 export interface TemplateInfo {
@@ -90,6 +90,13 @@ export const TEMPLATES: TemplateInfo[] = [
     description: 'Highest-end design with branding, QR code & signature area.',
     tags: ['Executive', 'QR Code', 'Luxury'],
     accentColor: '#1e293b',
+  },
+  {
+    id: 11,
+    name: 'Professional GST Invoice',
+    description: 'Traditional tax-invoice grid with Ship To, e-Way Bill & transport details.',
+    tags: ['GST', 'Transport', 'e-Way Bill'],
+    accentColor: '#1e3a5f',
   },
 ];
 
