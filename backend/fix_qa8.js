@@ -1,0 +1,15 @@
+const fs = require('fs');
+let code = fs.readFileSync('scripts/manual_qa_init.js', 'utf8');
+code = code.replace(/INTERNAL/g, "internal");
+code = code.replace(/ASSET/g, "asset");
+code = code.replace(/LIABILITY/g, "liability");
+code = code.replace(/EQUITY/g, "equity");
+code = code.replace(/REVENUE/g, "revenue");
+code = code.replace(/EXPENSE/g, "expense");
+code = code.replace(/ACTIVE/g, "active");
+code = code.replace(/RAW_MATERIAL/g, "raw_material");
+code = code.replace(/SEMI_FINISHED/g, "semi_finished");
+code = code.replace(/FINISHED_GOOD/g, "finished_good");
+code = code.replace(/TRADING_GOOD/g, "trading_good");
+code = code.replace(/B2B/g, "b2b");
+fs.writeFileSync('scripts/manual_qa_init.js', code);

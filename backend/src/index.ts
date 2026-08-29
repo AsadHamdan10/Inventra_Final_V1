@@ -36,6 +36,24 @@ import dashboardRoutes from './routes/dashboard';
 import auditRoutes from './routes/audit';
 import notificationRoutes from './routes/notifications';
 import adminRoutes from './routes/admin';
+import eWayBillRoutes from './routes/eWayBillRoutes';
+import gstFilingRoutes from './routes/gstFilingRoutes';
+// Procurement
+import purchaseRequisitions from './routes/purchaseRequisitions';
+import purchaseQuotations from './routes/purchaseQuotations';
+import purchaseOrdersProcurement from './routes/purchaseOrdersProcurement';
+import goodsReceipts from './routes/goodsReceipts';
+// Inventory
+import inventoryOperations from './routes/inventoryOperations';
+import warehouseRoutes from './routes/warehouses';
+// Manufacturing
+import bom from './routes/bom';
+import workCenters from './routes/workCenters';
+import routings from './routes/routings';
+import productionOrders from './routes/productionOrders';
+// Finance
+import financialStatements from './routes/financialStatements';
+
 
 const app = express();
 
@@ -82,7 +100,7 @@ app.use(rateLimit({
   max: 300,
   standardHeaders: true,
   legacyHeaders: false,
-  message: { error: 'Too many requests. Please try again later.' },
+  message: { success: false, error: { code: "RATE_LIMIT_EXCEEDED", message: "Too many requests from this IP, please try again after 15 minutes." } },
 }));
 
 // ── Middleware ────────────────────────────────────────────────
@@ -118,12 +136,30 @@ app.use(`${API}/expenses`, expenseRoutes);
 app.use(`${API}/investors`, investorRoutes);
 app.use(`${API}/intermediary`, intermediaryRoutes);
 app.use(`${API}/gst`, gstRoutes);
+app.use(`${API}/gst/returns`, gstFilingRoutes);
 app.use(`${API}/bank`, bankRoutes);
 app.use(`${API}/reports`, reportRoutes);
 app.use(`${API}/dashboard`, dashboardRoutes);
 app.use(`${API}/audit`, auditRoutes);
 app.use(`${API}/notifications`, notificationRoutes);
 app.use(`${API}/admin`, adminRoutes);
+app.use(`${API}/ewaybill`, eWayBillRoutes);
+// Procurement
+app.use(`${API}/purchase-requisitions`, purchaseRequisitions);
+app.use(`${API}/purchase-quotations`, purchaseQuotations);
+app.use(`${API}/purchase-orders`, purchaseOrdersProcurement);
+app.use(`${API}/goods-receipts`, goodsReceipts);
+// Inventory
+app.use(`${API}/inventory/warehouses`, warehouseRoutes);
+app.use(`${API}/inventory`, inventoryOperations);
+// Manufacturing
+app.use(`${API}/bom`, bom);
+app.use(`${API}/work-centers`, workCenters);
+app.use(`${API}/routings`, routings);
+app.use(`${API}/production-orders`, productionOrders);
+// Finance
+app.use(`${API}/finance`, financialStatements);
+
 
 // ── Error Handlers ────────────────────────────────────────────
 app.use(notFound);

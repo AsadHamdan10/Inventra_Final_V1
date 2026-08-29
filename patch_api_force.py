@@ -1,0 +1,28 @@
+import re
+
+with open("frontend/src/services/apiServices.ts", "r", encoding="utf-8") as f:
+    data = f.read()
+
+pattern = re.compile(r"export const adminApi = \{.*?\};", re.DOTALL)
+
+new_admin_api = """export const adminApi = {
+  dashboard: () => api.get('/admin/dashboard').then(res => res.data),
+  getApplications: () => api.get('/admin/applications').then(res => res.data),
+  getApplicationDetail: (id: number) => api.get(`/admin/applications/${id}`).then(res => res.data),
+  approveApplication: (id: number) => api.post(`/admin/users/${id}/approve`).then(res => res.data),
+  rejectApplication: (id: number, reason: string) => api.post(`/admin/users/${id}/reject`, { reason }).then(res => res.data),
+  resendActivation: (id: number) => api.post(`/admin/users/${id}/resend-activation`).then(res => res.data),
+  getCompanies: () => api.get('/admin/companies').then(res => res.data),
+  getCompanyDetail: (id: number) => api.get(`/admin/companies/${id}`).then(res => res.data),
+  suspendCompany: (id: number, reason: string) => api.post(`/admin/users/${id}/suspend`, { reason }).then(res => res.data),
+  reactivateCompany: (id: number) => api.post(`/admin/users/${id}/reactivate`).then(res => res.data),
+  sendPasswordReset: (id: number) => api.post(`/admin/users/${id}/send-password-reset`).then(res => res.data),
+  getSubscriptions: () => api.get('/admin/subscriptions').then(res => res.data),
+  getSecurity: () => api.get('/admin/security').then(res => res.data),
+  getAuditLogs: (page = 1) => api.get(`/admin/audit-logs?page=${page}`).then(res => res.data),
+};"""
+
+data = pattern.sub(new_admin_api, data)
+
+with open("frontend/src/services/apiServices.ts", "w", encoding="utf-8") as f:
+    f.write(data)

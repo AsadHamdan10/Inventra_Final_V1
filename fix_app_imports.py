@@ -1,0 +1,17 @@
+
+with open("frontend/src/App.tsx", "r", encoding="utf-8") as f:
+    data = f.read()
+
+imports = """
+import { BomPage } from "./pages/manufacturing/BomPage";
+import { ProductionOrderPage } from "./pages/manufacturing/ProductionOrderPage";
+import { TrialBalancePage } from "./pages/finance/TrialBalancePage";
+import { ProfitLossPage } from "./pages/finance/ProfitLossPage";
+import { BalanceSheetPage } from "./pages/finance/BalanceSheetPage";
+"""
+
+data = data.replace("import { Navigate, Outlet } from 'react-router-dom';", "import { Navigate, Outlet } from 'react-router-dom';\n" + imports)
+
+with open("frontend/src/App.tsx", "w", encoding="utf-8") as f:
+    f.write(data)
+

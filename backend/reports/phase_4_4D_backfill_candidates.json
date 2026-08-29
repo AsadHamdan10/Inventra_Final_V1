@@ -1,0 +1,731 @@
+{
+  "sales": [
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 4,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "200",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 5,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "200",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 6,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "200",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 7,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "200",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 8,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "200",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 9,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "236",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 10,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "708",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 11,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 12,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 13,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 14,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 15,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 16,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 17,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 18,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "236",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 19,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "708",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 20,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 21,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 22,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 23,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "236",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 24,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "708",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 25,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 26,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 27,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 28,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "236",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 29,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "708",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 30,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 31,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 32,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 33,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "10",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 34,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "10",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 35,
+      "transactionDate": "2026-05-01T00:00:00.000Z",
+      "amount": "10",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 36,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "236",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 37,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "708",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 38,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 39,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 40,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 41,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "236",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 42,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "708",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 43,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 44,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 45,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 46,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "236",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 47,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "708",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 48,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 49,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 50,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 51,
+      "transactionDate": "2026-08-25T00:00:00.000Z",
+      "amount": "236",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 52,
+      "transactionDate": "2026-08-25T00:00:00.000Z",
+      "amount": "708",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 53,
+      "transactionDate": "2026-08-25T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 54,
+      "transactionDate": "2026-08-25T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 55,
+      "transactionDate": "2026-08-25T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 56,
+      "transactionDate": "2026-08-25T00:00:00.000Z",
+      "amount": "236",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 57,
+      "transactionDate": "2026-08-25T00:00:00.000Z",
+      "amount": "708",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 58,
+      "transactionDate": "2026-08-25T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 59,
+      "transactionDate": "2026-08-25T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 60,
+      "transactionDate": "2026-08-25T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 61,
+      "transactionDate": "2026-08-25T00:00:00.000Z",
+      "amount": "236",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 62,
+      "transactionDate": "2026-08-25T00:00:00.000Z",
+      "amount": "708",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 63,
+      "transactionDate": "2026-08-25T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 64,
+      "transactionDate": "2026-08-25T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 65,
+      "transactionDate": "2026-08-25T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 66,
+      "transactionDate": "2026-08-25T00:00:00.000Z",
+      "amount": "236",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 67,
+      "transactionDate": "2026-08-25T00:00:00.000Z",
+      "amount": "708",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 68,
+      "transactionDate": "2026-08-25T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 69,
+      "transactionDate": "2026-08-25T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "SALE",
+      "sourceId": 70,
+      "transactionDate": "2026-08-25T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ISSUED",
+      "existingJournalCount": 0
+    }
+  ],
+  "purchases": [],
+  "customerPayments": [
+    {
+      "tenantId": 1,
+      "sourceType": "CUSTOMER_PAYMENT",
+      "sourceId": 1,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ACTIVE",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "CUSTOMER_PAYMENT",
+      "sourceId": 2,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ACTIVE",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "CUSTOMER_PAYMENT",
+      "sourceId": 3,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ACTIVE",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "CUSTOMER_PAYMENT",
+      "sourceId": 4,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ACTIVE",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "CUSTOMER_PAYMENT",
+      "sourceId": 5,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ACTIVE",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "CUSTOMER_PAYMENT",
+      "sourceId": 6,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ACTIVE",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "CUSTOMER_PAYMENT",
+      "sourceId": 7,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ACTIVE",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "CUSTOMER_PAYMENT",
+      "sourceId": 8,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ACTIVE",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "CUSTOMER_PAYMENT",
+      "sourceId": 9,
+      "transactionDate": "2026-08-24T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ACTIVE",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "CUSTOMER_PAYMENT",
+      "sourceId": 10,
+      "transactionDate": "2026-08-25T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ACTIVE",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "CUSTOMER_PAYMENT",
+      "sourceId": 11,
+      "transactionDate": "2026-08-25T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ACTIVE",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "CUSTOMER_PAYMENT",
+      "sourceId": 12,
+      "transactionDate": "2026-08-25T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ACTIVE",
+      "existingJournalCount": 0
+    },
+    {
+      "tenantId": 1,
+      "sourceType": "CUSTOMER_PAYMENT",
+      "sourceId": 13,
+      "transactionDate": "2026-08-25T00:00:00.000Z",
+      "amount": "11.8",
+      "status": "ACTIVE",
+      "existingJournalCount": 0
+    }
+  ],
+  "vendorPayments": [],
+  "expenses": [],
+  "salesReturns": [],
+  "purchaseReturns": []
+}

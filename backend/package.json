@@ -10,7 +10,8 @@
     "db:push": "prisma db push",
     "db:migrate": "prisma migrate dev",
     "db:generate": "prisma generate",
-    "db:seed": "tsx src/seed.ts"
+    "db:seed": "tsx src/seed.ts",
+    "dev:reset": "tsx src/dev-reset.ts"
   },
   "dependencies": {
     "@prisma/client": "^5.14.0",
@@ -52,3 +53,5 @@
     "typescript": "^5.4.5"
   }
 }
+
+

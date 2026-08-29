@@ -45,8 +45,8 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       return res.status(401).json({ error: 'User not found.' });
     }
 
-    // Super admin always passes; others need to be approved
-    if (user.role !== 'super_admin' && user.status !== 'approved') {
+    // Super admin always passes; others need to be active
+    if (user.role !== 'super_admin' && user.status !== 'active') {
       return res.status(403).json({
         error: 'Account not approved.',
         status: user.status,
@@ -132,8 +132,7 @@ export async function assertTenantOwnership(
   const model = allowedTables[table];
   if (!model) return false;
 
-  // @ts-ignore — dynamic prisma model access
-  const record = await prisma[model].findFirst({
+  const record = await (prisma as any)[model].findFirst({
     where: { id: recordId, userId },
     select: { id: true },
   });

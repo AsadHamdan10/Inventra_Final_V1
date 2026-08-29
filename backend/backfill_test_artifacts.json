@@ -1,0 +1,10 @@
+{
+  "excluded": [
+    {
+      "tenantId": 1,
+      "type": "CUSTOMER_PAYMENT",
+      "id": 1,
+      "reason": "test_financial_reconciliation_v2.js artifact"
+    }
+  ]
+}

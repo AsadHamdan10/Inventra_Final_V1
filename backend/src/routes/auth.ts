@@ -7,7 +7,7 @@ import {
   logout,
   changePassword,
   getMe,
-  updateProfile,
+  updateProfile, activateAccount, forgotPassword, resetPassword, revokeAllSessions,
   loginRateLimiter,
 } from '../controllers/authController';
 
@@ -24,5 +24,12 @@ router.put('/change-password', requireAuth, changePassword);
 
 router.get('/me', requireAuth, getMe);
 router.put('/profile', requireAuth, updateProfile);
+
+router.post('/activate', activateAccount);
+
+// Phase 6.2
+router.post('/forgot-password', forgotPassword);
+router.post('/reset-password', resetPassword);
+router.post('/revoke-all-sessions', requireAuth, revokeAllSessions);
 
 export default router;

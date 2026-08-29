@@ -105,6 +105,7 @@ export default function LoginPage() {
           Register
         </Link>
       </p>
-    </form>
+      <div className="mt-4 text-center text-sm"><Link to="/forgot-password" className="text-brand-600 hover:text-brand-500 font-medium">Forgot your password?</Link></div>
+            </form>
   );
 }

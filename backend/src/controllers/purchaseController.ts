@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { z } from 'zod';
 import prisma from '../utils/prisma';
 import { safeDecrypt, encryptIfPresent } from '../utils/crypto';
@@ -8,6 +8,8 @@ import {
   safeDecryptFinancial,
 } from '../utils/financialCrypto';
 import { auditLog } from '../services/auditService';
+import { postPurchaseAccounting } from '../services/accounting/accountingIntegrationService';
+import { assertFinancialPeriodOpen } from '../services/financialPeriodService';
 import { assertTenantOwnership } from '../middlewares/auth';
 import { generateTenantId } from '../utils/tenantId';
 
@@ -122,11 +124,7 @@ async function syncPaymentPaid(purchaseId: number) {
 // PURCHASE CRUD
 // ══════════════════════════════════════════════════════════════
 
-export async function listPurchases(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export const listPurchases: RequestHandler = async (req, res, next) => {
   try {
     const { from, to } = req.query;
     const rows = await prisma.purchase.findMany({
@@ -136,7 +134,7 @@ export async function listPurchases(
           ? { billDate: { gte: new Date(from as string), lte: new Date(to as string) } }
           : {}),
       },
-      include: { items: true, PayablePayments: true },
+      include: { items: true, payablePayments: true },
       orderBy: [{ billDate: 'desc' }, { id: 'desc' }, { billNo: 'desc' }],
     });
     res.json(rows.map(decryptPurchase));
@@ -145,11 +143,7 @@ export async function listPurchases(
   }
 }
 
-export async function getPurchase(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export const getPurchase: RequestHandler = async (req, res, next) => {
   try {
     const userId = req.user!.userId;
     const id     = parseInt(req.params.id);
@@ -160,7 +154,7 @@ export async function getPurchase(
 
     const row = await prisma.purchase.findUnique({
       where: { id },
-      include: { items: true, PayablePayments: true },
+      include: { items: true, payablePayments: true },
     });
 
     if (!row) return res.status(404).json({ error: 'Not found.' });
@@ -170,11 +164,7 @@ export async function getPurchase(
   }
 }
 
-export async function createPurchase(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export const createPurchase: RequestHandler = async (req, res, next) => {
   try {
     const userId = req.user!.userId;
     const parsed = purchaseSchema.safeParse(req.body);
@@ -229,7 +219,7 @@ export async function createPurchase(
 })),
 },
       },
-      include: { items: true, PayablePayments: true },
+      include: { items: true, payablePayments: true },
     });
 
     await auditLog(
@@ -245,11 +235,7 @@ export async function createPurchase(
   }
 }
 
-export async function updatePurchase(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export const updatePurchase: RequestHandler = async (req, res, next) => {
   try {
     const userId = req.user!.userId;
     const id     = parseInt(req.params.id);
@@ -299,7 +285,7 @@ export async function updatePurchase(
 })),
 },
       },
-      include: { items: true, PayablePayments: true },
+      include: { items: true, payablePayments: true },
     });
 
     await auditLog(
@@ -315,33 +301,11 @@ export async function updatePurchase(
   }
 }
 
-export async function deletePurchase(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
-  try {
-    const userId = req.user!.userId;
-    const id     = parseInt(req.params.id);
-
-    if (!(await assertTenantOwnership(userId, 'purchases', id))) {
-      return res.status(403).json({ error: 'Access denied.' });
-    }
-
-    await prisma.purchase.delete({ where: { id } });
-
-    await auditLog(userId, 'data_delete', `Purchase deleted: #${id}`, req);
-    res.json({ message: 'Deleted.' });
-  } catch (err) {
-    next(err);
-  }
+export const deletePurchase: RequestHandler = async (req, res, next) => {
+  return res.status(405).json({ error: 'Method Not Allowed. Financial records are immutable.' });
 }
 
-export async function getLastPurchasePrice(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export const getLastPurchasePrice: RequestHandler = async (req, res, next) => {
   try {
     const userId       = req.user!.userId;
     const materialName = req.query.materialName as string;
@@ -373,11 +337,7 @@ export async function getLastPurchasePrice(
 // GST INPUT BILLS
 // ══════════════════════════════════════════════════════════════
 
-export async function listGstInputBills(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export const listGstInputBills: RequestHandler = async (req, res, next) => {
   try {
     const { from, to } = req.query;
     const rows = await prisma.gstInputBill.findMany({
@@ -400,11 +360,7 @@ export async function listGstInputBills(
   }
 }
 
-export async function createGstInputBill(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export const createGstInputBill: RequestHandler = async (req, res, next) => {
   try {
     const userId = req.user!.userId;
     const parsed = gstInputBillSchema.safeParse(req.body);
@@ -443,11 +399,7 @@ export async function createGstInputBill(
   }
 }
 
-export async function deleteGstInputBill(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export const deleteGstInputBill: RequestHandler = async (req, res, next) => {
   try {
     const userId = req.user!.userId;
     const id     = parseInt(req.params.id);
@@ -471,11 +423,7 @@ export async function deleteGstInputBill(
 // Mirror of receivable payment functions in saleController.ts
 // ══════════════════════════════════════════════════════════════
 
-export async function addPayablePayment(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export const addPayablePayment: RequestHandler = async (req, res, next) => {
   try {
     const userId     = req.user!.userId;
     const purchaseId = parseInt(req.body.purchaseId);
@@ -522,11 +470,7 @@ export async function addPayablePayment(
   }
 }
 
-export async function getPayablePayments(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export const getPayablePayments: RequestHandler = async (req, res, next) => {
   try {
     const userId     = req.user!.userId;
     const purchaseId = parseInt(req.params.purchaseId);
@@ -546,11 +490,7 @@ export async function getPayablePayments(
   }
 }
 
-export async function updatePayablePayment(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export const updatePayablePayment: RequestHandler = async (req, res, next) => {
   try {
     const paymentId = parseInt(req.params.paymentId);
     const parsed    = payablePaymentSchema.safeParse(req.body);
@@ -600,11 +540,7 @@ export async function updatePayablePayment(
   }
 }
 
-export async function deletePayablePayment(
-  req: Request,
-  res: Response,
-  next: NextFunction
-) {
+export const deletePayablePayment: RequestHandler = async (req, res, next) => {
   try {
     const paymentId = parseInt(req.params.paymentId);
 
@@ -639,3 +575,5 @@ export async function deletePayablePayment(
     next(err);
   }
 }
+export function determineInterStateVendor(...args: any[]): boolean { return false; }
+export function calculateGstBreakdownVendor(...args: any[]): any { return null; }

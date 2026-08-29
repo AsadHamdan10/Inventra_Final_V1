@@ -1,12 +1,14 @@
 import { useEffect, useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
-import { Pencil, X, Check } from 'lucide-react';
+import { Pencil, X, Check, Shield, Info, Building, MapPin, Settings } from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import { authApi } from '../../services/apiServices';
 import toast from 'react-hot-toast';
 
 type ProfileForm = {
   companyName: string;
+  tradingName: string;
+  legalName: string;
   email: string;
   mobile: string;
   gstin: string;
@@ -18,10 +20,20 @@ type ProfileForm = {
   state: string;
   pincode: string;
   country: string;
+  website: string;
+  description: string;
+  contactPerson: string;
+  alternatePhone: string;
+  currency: string;
+  timezone: string;
+  dateFormat: string;
+  numberFormat: string;
 };
 
 const EMPTY_FORM: ProfileForm = {
   companyName: '',
+  tradingName: '',
+  legalName: '',
   email: '',
   mobile: '',
   gstin: '',
@@ -33,11 +45,21 @@ const EMPTY_FORM: ProfileForm = {
   state: '',
   pincode: '',
   country: 'India',
+  website: '',
+  description: '',
+  contactPerson: '',
+  alternatePhone: '',
+  currency: 'INR',
+  timezone: 'Asia/Kolkata',
+  dateFormat: 'DD/MM/YYYY',
+  numberFormat: 'en-IN',
 };
 
 function buildForm(u: any): ProfileForm {
   return {
     companyName:  u.companyName  || '',
+    tradingName:  u.tradingName  || '',
+    legalName:    u.legalName    || '',
     email:        u.email        || '',
     mobile:       u.mobile       || '',
     gstin:        u.gstin        || '',
@@ -49,215 +71,322 @@ function buildForm(u: any): ProfileForm {
     state:        u.state        || '',
     pincode:      u.pincode      || '',
     country:      u.country      || 'India',
+    website:      u.website      || '',
+    description:  u.description  || '',
+    contactPerson:u.contactPerson|| '',
+    alternatePhone:u.alternatePhone || '',
+    currency:     u.currency     || 'INR',
+    timezone:     u.timezone     || 'Asia/Kolkata',
+    dateFormat:   u.dateFormat   || 'DD/MM/YYYY',
+    numberFormat: u.numberFormat || 'en-IN',
   };
 }
 
 export default function CompanyProfilePage() {
-  const { user, setAuth, accessToken } = useAuthStore();
-  const queryClient = useQueryClient();
+  const qc = useQueryClient();
+  const { user } = useAuthStore();
+  const [editing, setEditing] = useState(false);
+  const [form, setForm] = useState<ProfileForm>(EMPTY_FORM);
+  const [saving, setSaving] = useState(false);
 
-  const { data: profile, isLoading: profileLoading } = useQuery({
-    queryKey: ['my-profile'],
-    queryFn: () => authApi.me(),
-    staleTime: 0,
-    refetchOnMount: true,
+  const { data, isLoading } = useQuery({
+    queryKey: ['authMe'],
+    queryFn: authApi.me,
+    staleTime: 1000 * 60, // 1 min
   });
 
-  const [saved, setSaved]     = useState<ProfileForm>(EMPTY_FORM);
-  const [form, setForm]       = useState<ProfileForm>(EMPTY_FORM);
-  const [isEditing, setIsEditing] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  // Populate from DB on mount / after refresh
   useEffect(() => {
-  const u = profile ?? user;
-  if (!u || isEditing) return;
+    if (data?.user) {
+      setForm(buildForm(data.user));
+    }
+  }, [data?.user]);
 
-  const built = buildForm(u);
-  setSaved(built);
-  setForm(built);
-}, [profile, user, isEditing]);
+  if (isLoading) return <div className="p-8 text-slate-500">Loading profile...</div>;
+  if (!data?.user) return <div className="p-8 text-slate-500">Profile unavailable.</div>;
 
-  // Keep Zustand store in sync
-  useEffect(() => {
-    if (!profile || !accessToken) return;
-    setAuth(profile, accessToken);
-  }, [profile, accessToken, setAuth]);
+  const u = data.user;
+  const snapshot = u.applicationSnapshot;
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setForm((prev) => ({ ...prev, [e.target.name]: e.target.value }));
-  };
-
-  const handleEdit = () => setIsEditing(true);
-
-  const handleCancel = () => {
-    setForm(saved);       // revert all unsaved changes
-    setIsEditing(false);
-  };
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSave = async () => {
     try {
-      setLoading(true);
-      const res = await authApi.updateProfile(form);
-      const fresh = buildForm(res.user);
-      setSaved(fresh);           // commit as the new baseline
-      setForm(fresh);
-      setAuth(res.user, accessToken || '');
-      await queryClient.invalidateQueries({ queryKey: ['my-profile'] });
-      setIsEditing(false);
-      toast.success('Profile updated successfully');
+      setSaving(true);
+      await authApi.updateProfile(form);
+      toast.success('Company profile updated');
+      setEditing(false);
+      qc.invalidateQueries({ queryKey: ['authMe'] });
     } catch (err: any) {
-      toast.error(err?.response?.data?.message || 'Failed to update profile');
+      toast.error(err.response?.data?.message || 'Failed to update profile');
     } finally {
-      setLoading(false);
+      setSaving(false);
     }
   };
 
-  if (profileLoading && !user) {
-    return (
-      <div className="max-w-6xl mx-auto px-4 py-8 text-sm text-gray-500">
-        Loading profile…
-      </div>
-    );
-  }
-
-  // ── Field renderer ────────────────────────────────────────────
-  const Field = ({
-    label,
-    name,
-    placeholder = '',
-    readOnly: forceReadOnly = false,
-  }: {
-    label: string;
-    name: keyof ProfileForm;
-    placeholder?: string;
-    readOnly?: boolean;
-  }) => {
-    const editable = isEditing && !forceReadOnly;
-    return (
-      <div>
-        <label className="block text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">
-          {label}
-          {forceReadOnly && (
-            <span className="ml-2 text-[10px] font-normal normal-case tracking-normal text-gray-400 dark:text-gray-500">
-              (fixed at registration)
-            </span>
-          )}
-        </label>
-        <input
-          name={name}
-          value={form[name]}
-          onChange={handleChange}
-          placeholder={editable ? placeholder : ''}
-          readOnly={!editable}
-          className={[
-            'w-full rounded-xl border px-4 py-3 text-sm transition-colors duration-150',
-            editable
-              ? 'border-indigo-400 dark:border-indigo-500 bg-white dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-indigo-500'
-              : 'border-transparent bg-gray-100 dark:bg-gray-800/60 text-gray-700 dark:text-gray-300 cursor-default select-text',
-          ].join(' ')}
-        />
-      </div>
-    );
+  const handleCancel = () => {
+    setForm(buildForm(u));
+    setEditing(false);
   };
 
   return (
-    <div className="max-w-6xl mx-auto px-2 sm:px-4">
-      <div className="bg-white dark:bg-gray-900 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-800 p-4 sm:p-6 lg:p-8">
-
-        {/* ── Header ── */}
-        <div className="flex items-start justify-between gap-4 mb-8">
-          <div>
-            <h1 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white">
-              Company Profile
-            </h1>
-            <p className="text-sm text-gray-500 mt-1">
-              {isEditing
-                ? 'Edit your details below, then save when done.'
-                : 'Your registered company information.'}
-            </p>
-          </div>
-
-          {!isEditing && (
+    <div className="max-w-6xl mx-auto p-4 md:p-6 space-y-6">
+      
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-slate-900 dark:text-white">Company Profile</h1>
+          <p className="text-sm text-slate-500 dark:text-slate-400 mt-1">
+            Manage your operational tenant settings and view immutable registration records.
+          </p>
+        </div>
+        
+        {editing ? (
+          <div className="flex items-center gap-3">
             <button
-              type="button"
-              onClick={handleEdit}
-              className="
-                inline-flex items-center gap-2
-                px-4 py-2.5
-                rounded-xl
-                border border-indigo-600
-                text-indigo-600 dark:text-indigo-400
-                hover:bg-indigo-50 dark:hover:bg-indigo-900/30
-                text-sm font-medium
-                transition
-                shrink-0
-              "
+              onClick={handleCancel}
+              disabled={saving}
+              className="px-4 py-2 bg-white dark:bg-slate-800 border border-slate-300 dark:border-slate-700 rounded-md text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700"
             >
-              <Pencil size={14} />
-              Edit Profile
+              <X size={16} className="inline mr-2" /> Cancel
             </button>
-          )}
+            <button
+              onClick={handleSave}
+              disabled={saving}
+              className="px-4 py-2 bg-brand-600 text-white rounded-md text-sm font-medium hover:bg-brand-700 shadow-sm disabled:opacity-50"
+            >
+              <Check size={16} className="inline mr-2" /> {saving ? 'Saving...' : 'Save Changes'}
+            </button>
+          </div>
+        ) : (
+          <button
+            onClick={() => setEditing(true)}
+            className="px-4 py-2 bg-brand-50 dark:bg-brand-900/20 text-brand-700 dark:text-brand-300 rounded-md text-sm font-medium hover:bg-brand-100 dark:hover:bg-brand-900/40"
+          >
+            <Pencil size={16} className="inline mr-2" /> Edit Profile
+          </button>
+        )}
+      </div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        
+        {/* SECTION A: ORIGINAL APPLICATION (READ ONLY) */}
+        <div className="lg:col-span-1 space-y-6">
+          <div className="bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700 overflow-hidden">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-700 flex items-center gap-2 bg-slate-100 dark:bg-slate-800">
+              <Shield size={18} className="text-slate-500" />
+              <h2 className="font-semibold text-slate-800 dark:text-slate-200">Original Application</h2>
+            </div>
+            <div className="p-4 space-y-4 text-sm">
+              <div className="bg-blue-50 dark:bg-blue-900/20 text-blue-700 dark:text-blue-300 p-3 rounded-lg flex gap-2 text-xs">
+                <Info size={16} className="shrink-0" />
+                <p>This information is preserved from your original INVENTRA application and cannot be changed.</p>
+              </div>
+
+              {snapshot ? (
+                <div className="space-y-4">
+                  <SnapshotField label="Application Reference" value={snapshot.applicationRef} />
+                  <SnapshotField label="Original Applicant" value={snapshot.fullName} />
+                  <SnapshotField label="Original Company Name" value={snapshot.companyName} />
+                  <SnapshotField label="Username" value={snapshot.username} />
+                  <SnapshotField label="Registration Email" value={snapshot.email} />
+                  <SnapshotField label="Registration Mobile" value={snapshot.mobile} />
+                  <SnapshotField label="Business Type" value={snapshot.businessType} />
+                  <SnapshotField label="Industry" value={snapshot.industry} />
+                  <SnapshotField label="Plan" value={snapshot.plan} />
+                  <SnapshotField label="Submitted On" value={new Date(snapshot.submittedAt).toLocaleDateString()} />
+                </div>
+              ) : (
+                <div className="text-slate-500 italic">No historical snapshot available.</div>
+              )}
+            </div>
+          </div>
         </div>
 
-        {/* ── Form ── */}
-        <form onSubmit={handleSubmit} className="grid grid-cols-1 lg:grid-cols-2 gap-x-6 gap-y-5">
-
-          <Field label="Company Name"  name="companyName"  readOnly />
-          <Field label="Email"         name="email"        placeholder="info@company.com" />
-          <Field label="Mobile"        name="mobile"       placeholder="9876543210" />
-          <Field label="GSTIN"         name="gstin"        placeholder="33ABCDE1234F1Z5" />
-          <Field label="PAN Number"    name="panNumber"    placeholder="ABCDE1234F" />
-          <Field label="Address Line 1" name="addressLine1" placeholder="Door No, Street" />
-          <Field label="Address Line 2" name="addressLine2" placeholder="Area / Landmark" />
-          <Field label="City"          name="city"         placeholder="Chennai" />
-          <Field label="District"      name="district"     placeholder="Chennai" />
-          <Field label="State"         name="state"        placeholder="Tamil Nadu" />
-          <Field label="Pincode"       name="pincode"      placeholder="600001" />
-          <Field label="Country"       name="country"      placeholder="India" />
-
-          {/* ── Action row — only visible in edit mode ── */}
-          {isEditing && (
-            <div className="lg:col-span-2 pt-2 flex flex-row items-center gap-3 border-t border-gray-100 dark:border-gray-800 mt-2">
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex-1 sm:flex-none inline-flex items-center justify-center gap-2
-                  px-6 py-2.5
-                  rounded-xl
-                  bg-indigo-600 hover:bg-indigo-700
-                  text-white text-sm font-medium
-                  transition disabled:opacity-50
-                "
-              >
-                <Check size={15} />
-                {loading ? 'Saving…' : 'Save Changes'}
-              </button>
-
-              <button
-                type="button"
-                onClick={handleCancel}
-                disabled={loading}
-                className="
-                  flex-1 sm:flex-none
-                  inline-flex items-center justify-center gap-2
-                  px-6 py-2.5
-                  rounded-xl
-                  border border-gray-300 dark:border-gray-700
-                  text-gray-700 dark:text-gray-300
-                  hover:bg-gray-50 dark:hover:bg-gray-800
-                  text-sm font-medium
-                  transition disabled:opacity-50
-                "
-              >
-                <X size={15} />
-                Cancel
-              </button>
+        {/* SECTION B: CURRENT COMPANY PROFILE */}
+        <div className="lg:col-span-2 space-y-6">
+          
+          {/* Identity & Contact */}
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2">
+              <Building size={18} className="text-slate-400" />
+              <h2 className="font-semibold text-slate-800 dark:text-slate-200">Company Identity & Contact</h2>
             </div>
-          )}
-        </form>
+            <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+              <Field 
+                label="Company Name" 
+                value={form.companyName} 
+                onChange={v => setForm({...form, companyName: v})}
+                editing={editing}
+                help="Preserved from application but can be updated here."
+              />
+              <Field 
+                label="Legal Name" 
+                value={form.legalName} 
+                onChange={v => setForm({...form, legalName: v})}
+                editing={editing}
+              />
+              <Field 
+                label="Trading Name" 
+                value={form.tradingName} 
+                onChange={v => setForm({...form, tradingName: v})}
+                editing={editing}
+                help="Your current operational/trading name."
+              />
+              <Field 
+                label="Website" 
+                value={form.website} 
+                onChange={v => setForm({...form, website: v})}
+                editing={editing}
+              />
+              <Field 
+                label="Operational Email" 
+                value={form.email} 
+                onChange={v => setForm({...form, email: v})}
+                editing={editing}
+              />
+              <Field 
+                label="Primary Phone" 
+                value={form.mobile} 
+                onChange={v => setForm({...form, mobile: v})}
+                editing={editing}
+              />
+              <Field 
+                label="Contact Person" 
+                value={form.contactPerson} 
+                onChange={v => setForm({...form, contactPerson: v})}
+                editing={editing}
+              />
+            </div>
+          </div>
+
+          {/* Tax & Legal */}
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2">
+              <MapPin size={18} className="text-slate-400" />
+              <h2 className="font-semibold text-slate-800 dark:text-slate-200">Address, Tax & Legal</h2>
+            </div>
+            <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+              <Field 
+                label="GSTIN" 
+                value={form.gstin} 
+                onChange={v => setForm({...form, gstin: v})}
+                editing={editing}
+                help="Used for GST and compliance documents."
+              />
+              <Field 
+                label="PAN Number" 
+                value={form.panNumber} 
+                onChange={v => setForm({...form, panNumber: v})}
+                editing={editing}
+              />
+              <Field 
+                label="Address Line 1" 
+                value={form.addressLine1} 
+                onChange={v => setForm({...form, addressLine1: v})}
+                editing={editing}
+              />
+              <Field 
+                label="Address Line 2" 
+                value={form.addressLine2} 
+                onChange={v => setForm({...form, addressLine2: v})}
+                editing={editing}
+              />
+              <Field 
+                label="City" 
+                value={form.city} 
+                onChange={v => setForm({...form, city: v})}
+                editing={editing}
+              />
+              <Field 
+                label="State" 
+                value={form.state} 
+                onChange={v => setForm({...form, state: v})}
+                editing={editing}
+              />
+              <Field 
+                label="Pincode" 
+                value={form.pincode} 
+                onChange={v => setForm({...form, pincode: v})}
+                editing={editing}
+              />
+              <Field 
+                label="Country" 
+                value={form.country} 
+                onChange={v => setForm({...form, country: v})}
+                editing={editing}
+              />
+            </div>
+          </div>
+
+          {/* Configuration */}
+          <div className="bg-white dark:bg-slate-900 rounded-xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
+            <div className="p-4 border-b border-slate-200 dark:border-slate-800 flex items-center gap-2">
+              <Settings size={18} className="text-slate-400" />
+              <h2 className="font-semibold text-slate-800 dark:text-slate-200">ERP Configuration</h2>
+            </div>
+            <div className="p-5 grid grid-cols-1 md:grid-cols-2 gap-5">
+              <Field 
+                label="Currency" 
+                value={form.currency} 
+                onChange={v => setForm({...form, currency: v})}
+                editing={editing}
+              />
+              <Field 
+                label="Timezone" 
+                value={form.timezone} 
+                onChange={v => setForm({...form, timezone: v})}
+                editing={editing}
+              />
+              <Field 
+                label="Date Format" 
+                value={form.dateFormat} 
+                onChange={v => setForm({...form, dateFormat: v})}
+                editing={editing}
+              />
+              <Field 
+                label="Number Format" 
+                value={form.numberFormat} 
+                onChange={v => setForm({...form, numberFormat: v})}
+                editing={editing}
+              />
+            </div>
+          </div>
+
+        </div>
       </div>
+    </div>
+  );
+}
+
+function SnapshotField({ label, value }: { label: string, value: string | null | undefined }) {
+  return (
+    <div className="flex flex-col">
+      <span className="text-xs text-slate-500 dark:text-slate-400 font-medium">{label}</span>
+      <span className="text-sm font-medium text-slate-800 dark:text-slate-200">{value || '-'}</span>
+    </div>
+  );
+}
+
+function Field({ label, value, onChange, editing, help }: { 
+  label: string; 
+  value: string; 
+  onChange: (v: string) => void;
+  editing: boolean;
+  help?: string;
+}) {
+  return (
+    <div className="flex flex-col">
+      <label className="text-sm font-medium text-slate-700 dark:text-slate-300 mb-1">{label}</label>
+      {editing ? (
+        <input 
+          type="text" 
+          value={value} 
+          onChange={e => onChange(e.target.value)}
+          className="w-full px-3 py-2 border border-slate-300 dark:border-slate-700 rounded-md bg-white dark:bg-slate-900 text-slate-900 dark:text-white focus:ring-1 focus:ring-brand-500 focus:border-brand-500 outline-none text-sm transition-shadow"
+        />
+      ) : (
+        <div className="px-3 py-2 border border-transparent bg-slate-50 dark:bg-slate-800/50 rounded-md text-sm text-slate-800 dark:text-slate-200 font-medium">
+          {value || <span className="text-slate-400 font-normal italic">Not set</span>}
+        </div>
+      )}
+      {help && <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{help}</p>}
     </div>
   );
 }

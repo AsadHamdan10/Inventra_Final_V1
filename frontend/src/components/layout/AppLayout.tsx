@@ -4,8 +4,7 @@ import {
   LayoutDashboard, ShoppingCart, FileText, Package, Users, Building2,
   TrendingUp, TrendingDown, Calculator, Wallet, UserCheck, Repeat2,
   Landmark, BookOpen, ClipboardList, Settings, LogOut, Bell,
-  ChevronDown, Menu, X, Sun, Moon, Shield, BookMarked, Palette, Percent, Scroll,
-} from 'lucide-react';
+  ChevronDown, Menu, X, Sun, Moon, Shield, BookMarked, Palette, Percent, Scroll, CreditCard, Activity} from 'lucide-react';
 import { useAuthStore } from '../../store/authStore';
 import Footer from '../ui/Footer';
 import { authApi } from '../../services/apiServices';
@@ -55,11 +54,13 @@ const tenantNav: NavSection[] = [
     ],
   },
   {
-    title: 'GST',
-    items: [
-      { to: '/gst',          icon: Calculator, label: 'GST'          },
-      { to: '/gst-payments', icon: Wallet,     label: 'GST Payments' },
-    ],
+      title: 'Compliance & GST',
+      items: [
+        { to: '/gst',          icon: Calculator, label: 'GST Summary'   },
+        { to: '/gst-payments', icon: Wallet,     label: 'GST Payments'  },
+        { to: '/ewaybill',     icon: FileText,   label: 'E-Way Bill'    },
+        { to: '/gst/filing',   icon: Scroll,     label: 'GST Filing'    },
+      ],
   },
   {
     title: 'Finance',
@@ -87,10 +88,34 @@ const tenantNav: NavSection[] = [
 
 const adminNav: NavSection[] = [
   {
-    title: 'Admin Panel',
+    title: 'Command Center',
     items: [
-      { to: '/admin',       icon: Shield, label: 'Dashboard'    },
-      { to: '/admin/users', icon: Users,  label: 'Manage Users' },
+      { to: '/admin', icon: LayoutDashboard, label: 'Dashboard' },
+    ],
+  },
+  {
+    title: 'Applications',
+    items: [
+      { to: '/admin/applications', icon: FileText, label: 'Applications' },
+    ],
+  },
+  {
+    title: 'Tenants',
+    items: [
+      { to: '/admin/companies', icon: Building2, label: 'Companies' },
+    ],
+  },
+  {
+    title: 'Platform',
+    items: [
+      { to: '/admin/subscriptions', icon: CreditCard, label: 'Subscriptions' },
+    ],
+  },
+  {
+    title: 'Security',
+    items: [
+      { to: '/admin/security', icon: Shield, label: 'Security Center' },
+      { to: '/admin/audit-logs', icon: Activity, label: 'Audit Logs' },
     ],
   },
 ];

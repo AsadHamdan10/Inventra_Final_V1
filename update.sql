@@ -1,0 +1,1 @@
+ALTER TYPE "Status" ADD VALUE IF NOT EXISTS 'activation_pending'; ALTER TYPE "Status" ADD VALUE IF NOT EXISTS 'active'; UPDATE users SET status = 'active' WHERE status = 'approved' AND password IS NOT NULL; UPDATE users SET status = 'activation_pending' WHERE status = 'approved' AND password IS NULL;

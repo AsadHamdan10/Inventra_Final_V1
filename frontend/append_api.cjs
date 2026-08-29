@@ -1,0 +1,4 @@
+const fs = require('fs');
+const content = fs.readFileSync('src/services/apiServices.ts', 'utf8');
+const newContent = content + '\nexport const gstFilingApi = {\n  list: () => api.get(\'/gst/returns\').then((r: any) => r.data),\n  get: (id: number) => api.get(\'/gst/returns/\' + id).then((r: any) => r.data),\n  prepare: (data: any) => api.post(\'/gst/returns/prepare\', data).then((r: any) => r.data),\n  reconcile: (id: number) => api.post(\'/gst/returns/\' + id + \'/reconcile\').then((r: any) => r.data),\n  markReady: (id: number) => api.post(\'/gst/returns/\' + id + \'/ready\').then((r: any) => r.data),\n  file: (id: number, simulateError?: string) => api.post(\'/gst/returns/\' + id + \'/file\', { simulateError }).then((r: any) => r.data),\n  regenerate: (id: number) => api.post(\'/gst/returns/\' + id + \'/regenerate\').then((r: any) => r.data)\n};\n';
+fs.writeFileSync('src/services/apiServices.ts', newContent);

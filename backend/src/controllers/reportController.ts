@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction, RequestHandler } from 'express';
 import prisma from '../utils/prisma';
 import { safeDecrypt } from '../utils/crypto';
 import { safeDecryptFinancial } from '../utils/financialCrypto';
@@ -52,7 +52,7 @@ function decryptFinancialWithFallback(encValue: string | null | undefined, plain
   return Number(plaintextValue ?? 0);
 }
 
-export async function getProfitReport(req: Request, res: Response, next: NextFunction) {
+export const getProfitReport: RequestHandler = async (req, res, next) => {
   try {
     const userId = req.user!.userId;
     const { from, to } = req.query;
@@ -112,7 +112,7 @@ export async function getProfitReport(req: Request, res: Response, next: NextFun
   } catch (err) { next(err); }
 }
 
-export async function getInventoryReport(req: Request, res: Response, next: NextFunction) {
+export const getInventoryReport: RequestHandler = async (req, res, next) => {
   try {
     const userId = req.user!.userId;
     const [purchased, sold, materials] = await Promise.all([
@@ -154,7 +154,7 @@ export async function getInventoryReport(req: Request, res: Response, next: Next
 // Returns Sale + Purchase rows + individual PayablePayment / ReceivablePayment
 // rows for the selected party. Opening balance calculated for that party only.
 
-export async function getLedger(req: Request, res: Response, next: NextFunction) {
+export const getLedger: RequestHandler = async (req, res, next) => {
   try {
     const userId        = req.user!.userId;
     const { from, to, party } = req.query;
@@ -180,7 +180,7 @@ export async function getLedger(req: Request, res: Response, next: NextFunction)
         oldSales,
         oldPurchases,
         oldReceipts,
-        oldPayablePayments,
+        oldpayablePayments,
       ] = await Promise.all([
         prisma.sale.findMany({
           where: {
@@ -261,7 +261,7 @@ export async function getLedger(req: Request, res: Response, next: NextFunction)
       const salesBefore           = oldSales.reduce((s, r) => s + Number(r.grandTotal), 0);
       const receiptsBefore        = oldReceipts.reduce((s, r) => s + Number(r.amount), 0);
       const purchasesBefore       = oldPurchases.reduce((s, r) => s + Number(r.grandTotal), 0);
-      const payablePaymentsBefore = oldPayablePayments.reduce((s, r) => s + Number(r.amount), 0);
+      const payablePaymentsBefore = oldpayablePayments.reduce((s, r) => s + Number(r.amount), 0);
 
       const openingBalance =
         salesBefore - receiptsBefore - purchasesBefore + payablePaymentsBefore;
@@ -419,7 +419,7 @@ export async function getLedger(req: Request, res: Response, next: NextFunction)
   }
 }
 
-export async function getGstReport(req: Request, res: Response, next: NextFunction) {
+export const getGstReport: RequestHandler = async (req, res, next) => {
   try {
     const userId = req.user!.userId;
     const { from, to } = req.query;
@@ -453,7 +453,7 @@ export async function getGstReport(req: Request, res: Response, next: NextFuncti
   } catch (err) { next(err); }
 }
 
-export async function getReceivables(req: Request, res: Response, next: NextFunction) {
+export const getReceivables: RequestHandler = async (req, res, next) => {
   try {
     const userId = req.user!.userId;
     const { from, to } = req.query;
@@ -476,7 +476,7 @@ export async function getReceivables(req: Request, res: Response, next: NextFunc
   } catch (err) { next(err); }
 }
 
-export async function getPayables(req: Request, res: Response, next: NextFunction) {
+export const getPayables: RequestHandler = async (req, res, next) => {
   try {
     const userId = req.user!.userId;
     const { from, to } = req.query;
@@ -487,7 +487,7 @@ export async function getPayables(req: Request, res: Response, next: NextFunctio
       include: {
         items: true,
         // Include individual payment rows so PayablesPage can show history
-        PayablePayments: {
+        payablePayments: {
           orderBy: [{ datePaid: 'desc' }, { id: 'desc' }],
         },
       },

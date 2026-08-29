@@ -1,0 +1,5 @@
+const fs = require('fs'); 
+let adminRoutes = fs.readFileSync('backend/src/routes/admin.ts', 'utf8'); 
+adminRoutes = adminRoutes.replace('import { Router } from \'express\';', 'import { Router } from \'express\';\nimport { SaasController } from \'../controllers/saasController\';'); 
+adminRoutes = adminRoutes.replace(/\/\/ Subscriptions[\s\S]*?(?=\/\/ Security & Audit)/, '// SaaS Billing (Phase 6.9)\nrouter.get(\'/plans\', SaasController.listPlans);\nrouter.get(\'/subscriptions\', SaasController.listSubscriptions);\nrouter.post(\'/subscriptions\', SaasController.createSubscription);\nrouter.get(\'/subscriptions/:id\', SaasController.getSubscription);\nrouter.post(\'/subscriptions/:id/cancel\', SaasController.cancelSubscription);\nrouter.post(\'/subscriptions/:id/payments\', SaasController.recordPayment);\nrouter.post(\'/payments/:paymentId/commission\', SaasController.recordCommission);\nrouter.get(\'/revenue\', SaasController.getRevenue);\n\n'); 
+fs.writeFileSync('backend/src/routes/admin.ts', adminRoutes, 'utf8'); 

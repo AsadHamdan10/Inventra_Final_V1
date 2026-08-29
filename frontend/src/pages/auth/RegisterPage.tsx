@@ -1,52 +1,40 @@
-import { useState } from 'react';
-import { Link } from 'react-router-dom';
-import { UserPlus, Eye, EyeOff } from 'lucide-react';
-import { authApi } from '../../services/apiServices';
-import toast from 'react-hot-toast';
+import { useState } from "react";
+import { Link } from "react-router-dom";
+import { UserPlus, ArrowRight, ArrowLeft, CheckCircle } from "lucide-react";
+import { authApi } from "../../services/apiServices";
 
 export default function RegisterPage() {
+  const [step, setStep] = useState(1);
   const [form, setForm] = useState({
-  companyName: '',
-  username: '',
-  email: '',
-
-  gstin: '',
-  panNumber: '',
-
-  addressLine1: '',
-  addressLine2: '',
-
-  city: '',
-  district: '',
-  state: '',
-  pincode: '',
-  country: 'India',
-
-  mobile: '',
-
-  password: '',
-  password2: '',
-});
+    fullName: "", username: "", email: "", mobile: "", companyName: "", businessType: "TRADING", industry: "", plan: "V1_BASIC", billingCycle: "YEARLY"
+  });
   const [loading, setLoading] = useState(false);
   const [done, setDone] = useState(false);
-  const [error, setError] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showPassword2, setShowPassword2] = useState(false);
+  const [error, setError] = useState("");
+  const [applicationRef, setApplicationRef] = useState("");
+
+  const nextStep = () => {
+    setError("");
+    if (step === 1) {
+      if (!form.username || !form.email || !form.mobile) { setError("Please fill all required fields."); return; }
+    }
+    if (step === 2) {
+      if (!form.companyName || !form.businessType) { setError("Please fill all required fields."); return; }
+    }
+    setStep((s) => s + 1);
+  };
+
+  const prevStep = () => setStep((s) => s - 1);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    setError('');
-    if (form.password !== form.password2) {
-      setError('Passwords do not match.');
-      return;
-    }
-    setLoading(true);
+    setError(""); setLoading(true);
     try {
-      await authApi.register(form);
+      const res = await authApi.register(form);
+      setApplicationRef(res.applicationRef || "INV-XXXXXX");
       setDone(true);
     } catch (err: any) {
-      const backendMessage = err.response?.data?.error || err.response?.data?.message;
-      setError(backendMessage || 'Registration failed. Please try again.');
+      setError(err.response?.data?.message || "Registration failed. Please try again.");
     } finally {
       setLoading(false);
     }
@@ -54,150 +42,148 @@ export default function RegisterPage() {
 
   if (done) {
     return (
-      <div className="text-center space-y-3">
-        <div className="text-4xl">✅</div>
-        <h2 className="text-xl font-bold text-gray-900 dark:text-white">Registration Successful</h2>
-        <p className="text-sm text-gray-500">
-          Your account is <strong>pending Super Admin approval</strong>. You'll be notified once approved.
-        </p>
-        <p className="text-sm text-gray-500">
-          If approval is taking longer than expected, email{' '}
-          <a href="mailto:maniyaliasadhamdan@gmail.com" className="text-brand-600 hover:text-brand-700 font-medium">
-            maniyaliasadhamdan@gmail.com
-          </a>{' '}
-          for help.
-        </p>
-        <Link to="/login" className="btn-primary inline-flex mt-2">Back to Login</Link>
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+        <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
+          <CheckCircle className="mx-auto h-16 w-16 text-green-500 mb-4" />
+          <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">Application Submitted</h2>
+          <p className="mt-4 text-sm text-gray-500 dark:text-gray-400">Your application reference</p>
+          <div className="mt-2 text-2xl font-mono font-bold text-brand-600 dark:text-brand-400">{applicationRef}</div>
+          <p className="mt-4 text-gray-600 dark:text-gray-300">We received your application. We will review it and send an email once your application is approved.</p>
+          <div className="mt-8"><Link to="/login" className="text-brand-600 hover:text-brand-500 font-medium">Return to Login</Link></div>
+        </div>
       </div>
     );
   }
 
-  const field = (
-    label: string,
-    key: keyof typeof form,
-    type = 'text',
-    placeholder = '',
-    required = false,
-    fullWidth = false
-  ) => (
-    <div className={fullWidth ? 'md:col-span-2' : ''}>
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-        {label}
-        {required && <span className="text-red-500 ml-0.5">*</span>}
-        {!required && <span className="text-gray-400 font-normal text-xs"> (optional)</span>}
-      </label>
-      <input
-        className="input w-full"
-        type={type}
-        placeholder={placeholder}
-        value={form[key]}
-        onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-        required={required}
-      />
-    </div>
-  );
-
-  const passwordField = (
-    label: string,
-    key: 'password' | 'password2',
-    placeholder: string,
-    visible: boolean,
-    onToggle: () => void
-  ) => (
-    <div>
-      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
-        {label}
-        <span className="text-red-500 ml-0.5">*</span>
-      </label>
-      <div className="relative flex items-center">
-        <input
-          className="input w-full pr-10"
-          type={visible ? 'text' : 'password'}
-          placeholder={placeholder}
-          value={form[key]}
-          onChange={(e) => setForm((f) => ({ ...f, [key]: e.target.value }))}
-          required
-          autoComplete="new-password"
-        />
-        <button
-          type="button"
-          onClick={onToggle}
-          className="absolute right-0 inset-y-0 flex items-center px-3 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300"
-          tabIndex={-1}
-          aria-label={visible ? 'Hide password' : 'Show password'}
-        >
-          {visible ? <EyeOff size={16} /> : <Eye size={16} />}
-        </button>
-      </div>
-    </div>
-  );
-
   return (
-    <div className="w-full max-w-3xl mx-auto">
-      <form
-        onSubmit={handleSubmit}
-        className="space-y-6 bg-white dark:bg-gray-900 sm:border sm:border-gray-200 sm:dark:border-gray-800 sm:rounded-xl p-0 sm:p-8"
-      >
-        <div>
-          <h2 className="text-xl font-bold text-gray-900 dark:text-white">Create account</h2>
-          <p className="text-sm text-gray-500 mt-0.5">Get started with Inventra</p>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex flex-col justify-center py-12 sm:px-6 lg:px-8">
+      <div className="sm:mx-auto sm:w-full sm:max-w-md text-center">
+        <h2 className="text-3xl font-bold tracking-tight text-gray-900 dark:text-white">INVENTRA</h2>
+        <p className="mt-2 text-sm text-gray-600 dark:text-gray-400">Start your journey</p>
+      </div>
+
+      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
+        <div className="bg-white dark:bg-gray-800 py-8 px-4 shadow sm:rounded-lg sm:px-10">
+          
+          <div className="flex items-center justify-between mb-8 relative">
+            <div className="absolute left-0 top-1/2 -mt-px w-full h-0.5 bg-gray-200 dark:bg-gray-700"></div>
+            {[1, 2, 3, 4].map((num) => (
+              <div key={num} className={`relative flex items-center justify-center w-8 h-8 rounded-full ${step >= num ? "bg-brand-600 text-white" : "bg-gray-200 text-gray-400 dark:bg-gray-700"} font-bold`}>{num}</div>
+            ))}
+          </div>
+          <div className="flex justify-between text-xs text-gray-500 dark:text-gray-400 mb-8 font-medium">
+            <span>You</span><span>Business</span><span>Plan</span><span>Review</span>
+          </div>
+
+          {error && <div className="mb-4 bg-red-50 text-red-600 p-3 rounded-md text-sm">{error}</div>}
+
+          <form onSubmit={step === 4 ? handleSubmit : (e) => { e.preventDefault(); nextStep(); }}>
+            {step === 1 && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Your Information</h3>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Full Name <span className="text-red-500">*</span></label>
+                  <input type="text" required value={form.fullName} onChange={(e) => setForm({ ...form, fullName: e.target.value })} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white p-3 text-lg" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Username <span className="text-red-500">*</span></label>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 mb-1">Choose carefully � your username cannot be changed later.</p>
+                  <input type="text" required value={form.username} onChange={(e) => setForm({ ...form, username: e.target.value })} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white p-3 text-lg" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Email Address <span className="text-red-500">*</span></label>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 mb-1">Used for activation and account security notifications.</p>
+                  <input type="email" required value={form.email} onChange={(e) => setForm({ ...form, email: e.target.value })} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white p-3 text-lg" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Mobile Number <span className="text-red-500">*</span></label>
+                  <input type="text" required value={form.mobile} onChange={(e) => setForm({ ...form, mobile: e.target.value })} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white p-3 text-lg" />
+                </div>
+                <div className="flex justify-end pt-4">
+                  <button type="button" onClick={nextStep} className="flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700">Continue <ArrowRight className="ml-2 h-4 w-4" /></button>
+                </div>
+              </div>
+            )}
+
+            {step === 2 && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Business Details</h3>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Company Name <span className="text-red-500">*</span></label>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 mb-1">Enter your official business name carefully � this becomes your primary company identity after application submission.</p>
+                  <input type="text" required value={form.companyName} onChange={(e) => setForm({ ...form, companyName: e.target.value })} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white p-3 text-lg" />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Business Type <span className="text-red-500">*</span></label>
+                  <p className="text-xs text-gray-500 dark:text-gray-400 mt-1 mb-1">Choose carefully � this determines the ERP modules available to your company.</p>
+                  <select value={form.businessType} onChange={(e) => setForm({ ...form, businessType: e.target.value })} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white p-3 text-lg">
+                    <option value="TRADING">Trading</option>
+                    <option value="MANUFACTURING">Manufacturing</option>
+                    <option value="BOTH">Both</option>
+                  </select>
+
+                  <div className="mt-2 text-xs text-brand-600 dark:text-brand-400 font-medium bg-brand-50 dark:bg-brand-900/20 p-2 rounded">
+                    {form.businessType === "TRADING" && "Sales, Procurement, Inventory & Finance"}
+                    {form.businessType === "MANUFACTURING" && "Manufacturing, BOM, Production, Inventory & Finance"}
+                    {form.businessType === "BOTH" && "Trading + Manufacturing"}
+                  </div>
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300">Industry (Optional)</label>
+                  <input type="text" value={form.industry} onChange={(e) => setForm({ ...form, industry: e.target.value })} className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-brand-500 focus:ring-brand-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white p-3 text-lg" />
+                </div>
+                <div className="flex justify-between pt-4">
+                  <button type="button" onClick={prevStep} className="flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"><ArrowLeft className="mr-2 h-4 w-4" /> Back</button>
+                  <button type="button" onClick={nextStep} className="flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700">Continue <ArrowRight className="ml-2 h-4 w-4" /></button>
+                </div>
+              </div>
+            )}
+
+            {step === 3 && (
+              <div className="space-y-4 animate-in fade-in slide-in-from-right-4">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Subscription Plan</h3>
+                <p className="text-xs text-gray-500 dark:text-gray-400">Plan and billing terms can be changed later according to your subscription.</p>
+                <div className="grid grid-cols-1 gap-4">
+                  <div className={`border-2 rounded-lg p-4 cursor-pointer ${form.plan === "V1_BASIC" ? "border-brand-500 bg-brand-50 dark:bg-brand-900/20" : "border-gray-200 dark:border-gray-700"}`} onClick={() => setForm({...form, plan: "V1_BASIC"})}>
+                    <div className="flex justify-between items-center"><span className="font-bold text-gray-900 dark:text-white">Basic ERP</span><span className="text-brand-600 font-bold">Free Trial</span></div>
+                    <p className="text-sm text-gray-500 mt-2">Core Trading & Finance.</p>
+                  </div>
+                  <div className={`border-2 rounded-lg p-4 cursor-pointer ${form.plan === "V1_MANUFACTURING" ? "border-brand-500 bg-brand-50 dark:bg-brand-900/20" : "border-gray-200 dark:border-gray-700"}`} onClick={() => setForm({...form, plan: "V1_MANUFACTURING"})}>
+                    <div className="flex justify-between items-center"><span className="font-bold text-gray-900 dark:text-white">Manufacturing ERP</span><span className="text-brand-600 font-bold">Custom</span></div>
+                    <p className="text-sm text-gray-500 mt-2">Full Production & Execution.</p>
+                  </div>
+                </div>
+                <div className="flex justify-between pt-4">
+                  <button type="button" onClick={prevStep} className="flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50"><ArrowLeft className="mr-2 h-4 w-4" /> Back</button>
+                  <button type="button" onClick={nextStep} className="flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700">Review <ArrowRight className="ml-2 h-4 w-4" /></button>
+                </div>
+              </div>
+            )}
+
+            {step === 4 && (
+              <div className="space-y-6 animate-in fade-in slide-in-from-right-4">
+                <h3 className="text-lg font-medium text-gray-900 dark:text-white">Review & Submit</h3>
+                <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-md space-y-3">
+                  <div><span className="block text-xs text-gray-500 uppercase">Applicant</span><span className="font-medium">{form.fullName} - {form.username} ({form.email})</span></div>
+                  <div><span className="block text-xs text-gray-500 uppercase">Business</span><span className="font-medium">{form.companyName} - {form.businessType}</span></div>
+                  <div><span className="block text-xs text-gray-500 uppercase">Plan</span><span className="font-medium">{form.plan === "V1_BASIC" ? "Basic ERP" : "Manufacturing ERP"}</span></div>
+                </div>
+                <div className="flex justify-between pt-4">
+                  <button type="button" onClick={prevStep} disabled={loading} className="flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 disabled:opacity-50"><ArrowLeft className="mr-2 h-4 w-4" /> Back</button>
+                  <button type="submit" disabled={loading} className="flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-brand-600 hover:bg-brand-700 disabled:opacity-50">{loading ? "Submitting..." : "Submit Application"}</button>
+                </div>
+              </div>
+            )}
+          </form>
+          
+          {step === 1 && (
+            <div className="mt-6 text-center">
+              <span className="text-sm text-gray-600 dark:text-gray-400">Already have an account? </span>
+              <Link to="/login" className="font-medium text-brand-600 hover:text-brand-500">Log in</Link>
+            </div>
+          )}
         </div>
-
-        {error && (
-          <div className="p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 text-red-700 dark:text-red-400 text-sm">
-            {error}
-          </div>
-        )}
-
-        {/* ── Required account details ─────────────────────────── */}
-        <div className="space-y-4">
-          <div className="flex items-center justify-between border-b border-gray-200 dark:border-gray-800 pb-2">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Account details</h3>
-            <span className="text-xs text-gray-400">
-              <span className="text-red-500">*</span> required
-            </span>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {field('Company Name', 'companyName', 'text', 'ABC Trading Pvt Ltd', true)}
-            {field('Username', 'username', 'text', 'abc_trading', true)}
-            {field('Email', 'email', 'email', 'info@abctrading.com', true)}
-            {field('Mobile', 'mobile', 'tel', '9876543210', true)}
-            {passwordField('Password', 'password', 'Minimum 8 characters', showPassword, () => setShowPassword((v) => !v))}
-            {passwordField('Confirm Password', 'password2', 'Re-enter password', showPassword2, () => setShowPassword2((v) => !v))}
-          </div>
-        </div>
-
-        {/* ── Optional company profile ─────────────────────────── */}
-        <div className="space-y-4">
-          <div className="border-b border-gray-200 dark:border-gray-800 pb-2">
-            <h3 className="text-sm font-semibold text-gray-900 dark:text-white">Company profile</h3>
-            <p className="text-xs text-gray-400 mt-0.5">Optional — you can complete this later from your profile.</p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {field('GSTIN', 'gstin', 'text', '33ABCDE1234F1Z5')}
-            {field('PAN Number', 'panNumber', 'text', 'ABCDE1234F')}
-            {field('Address Line 1', 'addressLine1', 'text', '123 Industrial Estate', false, true)}
-            {field('Address Line 2', 'addressLine2', 'text', 'Phase 2, SIPCOT', false, true)}
-            {field('City', 'city', 'text', 'Ranipet')}
-            {field('District', 'district', 'text', 'Ranipet')}
-            {field('State', 'state', 'text', 'Tamil Nadu')}
-            {field('Pincode', 'pincode', 'text', '632403')}
-            {field('Country', 'country', 'text', 'India')}
-          </div>
-        </div>
-
-        <button type="submit" className="btn-primary w-full py-2.5" disabled={loading}>
-          <UserPlus size={16} />
-          {loading ? 'Creating account…' : 'Create account'}
-        </button>
-
-        <p className="text-center text-sm text-gray-500">
-          Already have an account?{' '}
-          <Link to="/login" className="text-brand-600 hover:text-brand-700 font-medium">Sign in</Link>
-        </p>
-      </form>
+      </div>
     </div>
   );
 }

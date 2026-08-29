@@ -20,7 +20,7 @@ export default function AuditLogsPage() {
 
   const {data:logs=[],isLoading}=useQuery({
     queryKey:['audit-logs'],
-    queryFn:()=>isAdmin?adminApi.auditLogs():api.get('/audit').then(r=>r.data),
+    queryFn:()=>isAdmin?adminApi.getAuditLogs():api.get('/audit').then(r=>r.data),
   });
 
   const filtered=search?logs.filter((l:any)=>

@@ -1,38 +1,58 @@
-/**
- * Inventra — Database Seed
- * Creates the Super Admin account on first run.
- * Run: npm run db:seed
- */
-import bcrypt from 'bcryptjs';
 import { PrismaClient } from '@prisma/client';
+import bcrypt from 'bcryptjs';
+import "dotenv/config";
 
 const prisma = new PrismaClient();
 
 async function main() {
-  console.log('🌱 Seeding Inventra database…');
+  console.log('?? Seeding Inventra database�');
 
+  const superAdminEmail = process.env.SUPER_ADMIN_EMAIL || 'admin@inventra.local';
   const superAdminPassword = process.env.SUPER_ADMIN_PASSWORD || 'Inventra@SuperAdmin123';
+  
+  if (superAdminPassword.length < 8) {
+    throw new Error("SUPER_ADMIN_PASSWORD must be at least 8 characters long.");
+  }
+
   const hash = await bcrypt.hash(superAdminPassword, 12);
 
   const superAdmin = await prisma.user.upsert({
-    where: { username: 'superadmin' },
-    update: {},
-    create: {
-      companyName: 'Inventra Admin',
-      username: 'superadmin',
-      email: 'admin@inventra.app',
+    where: { email: superAdminEmail },
+    update: {
       password: hash,
       role: 'super_admin',
-      status: 'approved',
+      status: 'active'
+    },
+    create: {
+      companyName: 'Inventra Command Center',
+      username: 'superadmin',
+      email: superAdminEmail,
+      password: hash,
+      role: 'super_admin',
+      status: 'active',
       forcePasswordChange: false,
     },
   });
 
-  console.log(`✅ Super Admin created: ${superAdmin.username} (${superAdmin.email})`);
-  console.log(`🔐 Password: ${superAdminPassword}`);
-  console.log('⚠️  Change this password immediately after first login!');
+  // Explicitly revoke any existing sessions for this Super Admin to enforce security
+  // when the bootstrap password changes.
+  const revoked = await prisma.refreshToken.updateMany({
+    where: { userId: superAdmin.id, revokedAt: null },
+    data: { revokedAt: new Date() }
+  });
+
+  console.log(`? Super Admin configured: ${superAdmin.email}`);
+  if (revoked.count > 0) {
+    console.log(`?? Revoked ${revoked.count} previous Super Admin sessions.`);
+  }
+  console.log('??  Store the SUPER_ADMIN_PASSWORD safely in your .env file.');
 }
 
 main()
-  .catch((e) => { console.error(e); process.exit(1); })
-  .finally(() => prisma.$disconnect());
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(async () => {
+    await prisma.$disconnect();
+  });

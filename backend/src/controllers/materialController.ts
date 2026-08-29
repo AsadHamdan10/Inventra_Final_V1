@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response, NextFunction, RequestHandler } from 'express';
 import { z } from 'zod';
 import prisma from '../utils/prisma';
 import { auditLog } from '../services/auditService';
@@ -10,7 +10,7 @@ const schema = z.object({
   unit: z.string().default('Nos'),
 });
 
-export async function listMaterials(req: Request, res: Response, next: NextFunction) {
+export const listMaterials: RequestHandler = async (req, res, next) => {
   try {
     const userId = req.user!.userId;
     const rows = await prisma.material.findMany({ where: { userId }, orderBy: { materialName: 'asc' } });
@@ -18,7 +18,7 @@ export async function listMaterials(req: Request, res: Response, next: NextFunct
   } catch (err) { next(err); }
 }
 
-export async function createMaterial(req: Request, res: Response, next: NextFunction) {
+export const createMaterial: RequestHandler = async (req, res, next) => {
   try {
     const userId = req.user!.userId;
     const parsed = schema.safeParse(req.body);
@@ -29,7 +29,7 @@ export async function createMaterial(req: Request, res: Response, next: NextFunc
   } catch (err) { next(err); }
 }
 
-export async function updateMaterial(req: Request, res: Response, next: NextFunction) {
+export const updateMaterial: RequestHandler = async (req, res, next) => {
   try {
     const userId = req.user!.userId;
     const id = parseInt(req.params.id);
@@ -42,7 +42,7 @@ export async function updateMaterial(req: Request, res: Response, next: NextFunc
   } catch (err) { next(err); }
 }
 
-export async function deleteMaterial(req: Request, res: Response, next: NextFunction) {
+export const deleteMaterial: RequestHandler = async (req, res, next) => {
   try {
     const userId = req.user!.userId;
     const id = parseInt(req.params.id);

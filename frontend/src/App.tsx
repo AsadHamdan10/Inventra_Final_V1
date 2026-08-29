@@ -11,13 +11,22 @@ import PartyLedgerPrint from './pages/reports/PartyLedgerPrint';
 import LedgerPrint from './pages/reports/LedgerPrint';
 import GstSummaryPrint from './pages/gst/GstSummaryPrint';
 import GstPaymentPrint from './pages/gst/GstPaymentPrint';
+import EWayBillPage from './pages/compliance/EWayBillPage';
+import GstFilingDashboard from './pages/gst/GstFilingDashboard';
 import ExpensePrint from './pages/expenses/ExpensePrint';
 import IntermediaryPrint from './pages/intermediary/IntermediaryPrint';
 import BankStatementPrint from './pages/bankstatements/BankStatementPrint';
 import ReceivablePrint from './pages/receivables/ReceivablePrint';
 import PayablePrint from './pages/payables/PayablePrint';
 
+
+import BomPage from "./pages/manufacturing/BomPage";
+import ProductionOrderPage from "./pages/manufacturing/ProductionOrderPage";
+import { TrialBalancePage } from "./pages/finance/TrialBalancePage";
+import { ProfitLossPage } from "./pages/finance/ProfitLossPage";
+import { BalanceSheetPage } from "./pages/finance/BalanceSheetPage";
 // Layouts
+
 import AppLayout from './components/layout/AppLayout';
 import AuthLayout from './components/layout/AuthLayout';
 
@@ -32,6 +41,7 @@ import InstallBanner from './components/pwa/InstallBanner';
 // Auth pages
 import LoginPage from './pages/auth/LoginPage';
 import RegisterPage from './pages/auth/RegisterPage';
+import ActivationPage from './pages/auth/ActivationPage';
 import ChangePasswordPage from './pages/auth/ChangePasswordPage';
 
 // App pages
@@ -44,6 +54,19 @@ import SalesPage from './pages/sales/SalesPage';
 import QuotationPage from './pages/quotation/QuotationPage';
 import ExpensesPage from './pages/expenses/ExpensesPage';
 import InventoryPage from './pages/inventory/InventoryPage';
+import WarehousePage from './pages/inventory/WarehousePage';
+import StockTransferPage from './pages/inventory/StockTransferPage';
+import StockAdjustmentPage from './pages/inventory/StockAdjustmentPage';
+import PurchaseRequisitionsPage from './pages/procurement/PurchaseRequisitionsPage';
+import PurchaseQuotationsPage from './pages/procurement/PurchaseQuotationsPage';
+import PurchaseOrdersPage from './pages/procurement/PurchaseOrdersPage';
+import GoodsReceiptNotesPage from './pages/procurement/GoodsReceiptNotesPage';
+import ChartOfAccountsPage from './pages/accounting/ChartOfAccountsPage';
+import JournalEntriesPage from './pages/accounting/JournalEntriesPage';
+import WorkCentersPage from './pages/manufacturing/WorkCentersPage';
+import RoutingsPage from './pages/manufacturing/RoutingsPage';
+import MaterialIssuePage from './pages/manufacturing/MaterialIssuePage';
+import ProductionOutputPage from './pages/manufacturing/ProductionOutputPage';
 import ReceivablesPage from './pages/receivables/ReceivablesPage';
 import PayablesPage from './pages/payables/PayablesPage';
 import InvestorsPage from './pages/investors/InvestorsPage';
@@ -59,7 +82,14 @@ import CalculateSalePricePage from './pages/tools/CalculateSalePricePage';
 
 // Admin pages
 import AdminDashboardPage from './pages/admin/AdminDashboardPage';
-import AdminUsersPage from './pages/admin/AdminUsersPage';
+import AdminApplicationsPage from './pages/admin/AdminApplicationsPage';
+import AdminApplicationDetailPage from './pages/admin/AdminApplicationDetailPage';
+import AdminCompaniesPage from './pages/admin/AdminCompaniesPage';
+import AdminCompanyDetailPage from './pages/admin/AdminCompanyDetailPage';
+import AdminSubscriptionsPage from './pages/admin/AdminSubscriptionsPage';
+import AdminSecurityPage from './pages/admin/AdminSecurityPage';
+import AdminAuditLogsPage from './pages/admin/AdminAuditLogsPage';
+
 
 function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { isAuthenticated, isHydrated, user } = useAuthStore();
@@ -117,14 +147,21 @@ export default function App() {
             <Route element={<AuthLayout />}>
               <Route path="/login"           element={<LoginPage />} />
               <Route path="/register"        element={<RegisterPage />} />
+              <Route path="/activate"        element={<ActivationPage />} />
               <Route path="/change-password" element={<ChangePasswordPage />} />
             </Route>
 
             {/* Super Admin routes */}
-            <Route path="/admin" element={<AdminRoute><AppLayout isAdmin /></AdminRoute>}>
-              <Route index element={<AdminDashboardPage />} />
-              <Route path="users" element={<AdminUsersPage />} />
-            </Route>
+                          <Route path="/admin" element={<AdminRoute><AppLayout isAdmin /></AdminRoute>}>
+                <Route index element={<AdminDashboardPage />} />
+                <Route path="applications" element={<AdminApplicationsPage />} />
+                <Route path="applications/:id" element={<AdminApplicationDetailPage />} />
+                <Route path="companies" element={<AdminCompaniesPage />} />
+                <Route path="companies/:id" element={<AdminCompanyDetailPage />} />
+                <Route path="subscriptions" element={<AdminSubscriptionsPage />} />
+                <Route path="security" element={<AdminSecurityPage />} />
+                <Route path="audit-logs" element={<AdminAuditLogsPage />} />
+              </Route>
 
             {/* Standalone Print Routes */}
             <Route path="/purchase-register-print"  element={<TenantRoute><PurchaseRegisterPrint /></TenantRoute>} />
@@ -141,7 +178,27 @@ export default function App() {
             <Route path="/payable-print"            element={<TenantRoute><PayablePrint /></TenantRoute>} />
 
             {/* Tenant routes */}
-            <Route path="/" element={<TenantRoute><AppLayout /></TenantRoute>}>
+              <Route path="/" element={<TenantRoute><AppLayout /></TenantRoute>}>
+              {/* Inventory Routes */}
+              <Route path="/inventory/warehouses" element={<TenantRoute><WarehousePage /></TenantRoute>} />
+              <Route path="/inventory/stock-transfer" element={<TenantRoute><StockTransferPage /></TenantRoute>} />
+              <Route path="/inventory/stock-adjustment" element={<TenantRoute><StockAdjustmentPage /></TenantRoute>} />
+
+              {/* Procurement Routes */}
+              <Route path="/procurement/requisitions" element={<TenantRoute><PurchaseRequisitionsPage /></TenantRoute>} />
+              <Route path="/procurement/quotations" element={<TenantRoute><PurchaseQuotationsPage /></TenantRoute>} />
+              <Route path="/procurement/orders" element={<TenantRoute><PurchaseOrdersPage /></TenantRoute>} />
+              <Route path="/procurement/grn" element={<TenantRoute><GoodsReceiptNotesPage /></TenantRoute>} />
+
+              {/* Accounting Routes */}
+              <Route path="/accounting/coa" element={<TenantRoute><ChartOfAccountsPage /></TenantRoute>} />
+              <Route path="/accounting/journals" element={<TenantRoute><JournalEntriesPage /></TenantRoute>} />
+
+              {/* Manufacturing Extensions */}
+              <Route path="/manufacturing/work-centers" element={<TenantRoute><WorkCentersPage /></TenantRoute>} />
+              <Route path="/manufacturing/routings" element={<TenantRoute><RoutingsPage /></TenantRoute>} />
+              <Route path="/manufacturing/material-issue" element={<TenantRoute><MaterialIssuePage /></TenantRoute>} />
+              <Route path="/manufacturing/production-output" element={<TenantRoute><ProductionOutputPage /></TenantRoute>} />
               <Route index element={<DashboardPage />} />
               <Route path="vendors"               element={<VendorsPage />} />
               <Route path="customers"             element={<CustomersPage />} />
@@ -155,6 +212,8 @@ export default function App() {
               <Route path="payables"              element={<PayablesPage />} />
               <Route path="investors"             element={<InvestorsPage />} />
               <Route path="intermediary"          element={<IntermediaryPage />} />
+              <Route path="ewaybill"              element={<EWayBillPage />} />
+              <Route path="gst/filing"            element={<GstFilingDashboard />} />
               <Route path="bank-statements"       element={<BankStatementsPage />} />
               <Route path="gst"                   element={<GstPage />} />
               <Route path="gst-payments"          element={<GstPaymentsPage />} />
@@ -164,7 +223,18 @@ export default function App() {
               <Route path="calculate-sale-price"  element={<CalculateSalePricePage />} />
 
               {/* Reports */}
+              
+              
+              {/* Manufacturing */}
+              <Route path="manufacturing/bom" element={<BomPage />} />
+              <Route path="manufacturing/production-orders" element={<ProductionOrderPage />} />
+
+              {/* Financial Statements */}
+              <Route path="finance/trial-balance" element={<TrialBalancePage />} />
+              <Route path="finance/profit-loss"   element={<ProfitLossPage />} />
+              <Route path="finance/balance-sheet" element={<BalanceSheetPage />} />
               <Route path="reports/profit"        element={<ProfitPage />} />
+
               <Route path="reports/day-book"      element={<LedgerPage />} />
               <Route path="reports/party-ledger"  element={<PartyLedgerPage />} />
 
@@ -183,3 +253,9 @@ export default function App() {
     </UpdateProvider>
   );
 }
+
+
+
+
+
+
