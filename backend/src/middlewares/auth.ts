@@ -1,4 +1,4 @@
-import { Request, Response, NextFunction } from 'express';
+﻿import { Request, Response, NextFunction } from 'express';
 import { verifyAccessToken, JwtPayload } from '../utils/jwt';
 import prisma from '../utils/prisma';
 import { auditLog } from '../services/auditService';
@@ -10,13 +10,18 @@ declare global {
         userId: number;
         role: string;
         companyName: string;
+        status: string;
+        // Phase 6.10H Part 2 - set only for a staff (TenantUser) session.
+        // userId above always stays the TENANT's own id.
+        staffId?: number;
+        staffName?: string;
       };
     }
   }
 }
 
 /**
- * requireAuth — verify JWT, attach user to request.
+ * requireAuth â€” verify JWT, attach user to request.
  * Blocks unapproved tenants automatically.
  */
 export async function requireAuth(req: Request, res: Response, next: NextFunction) {
@@ -45,18 +50,33 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
       return res.status(401).json({ error: 'User not found.' });
     }
 
-    // Super admin always passes; others need to be active
-    if (user.role !== 'super_admin' && user.status !== 'active') {
-      return res.status(403).json({
-        error: 'Account not approved.',
-        status: user.status,
-      });
+    // Status check moved to requireTenant to allow login for suspended/pending accounts to see their status page.
+
+    let role = user.role;
+    let staffId: number | undefined;
+    let staffName: string | undefined;
+
+    // Phase 6.10H Part 2 - a staff session's JWT carries staffId. Re-verify on
+    // EVERY request (not just at login) that the staff row still exists and is
+    // still active, so disabling a staff member takes effect immediately
+    // rather than only the next time they try to log in.
+    if (payload.staffId) {
+      const staff = await prisma.tenantUser.findUnique({ where: { id: payload.staffId } });
+      if (!staff || staff.status !== 'active' || staff.tenantId !== user.id) {
+        return res.status(401).json({ error: 'Your staff access has been disabled. Please contact your company administrator.' });
+      }
+      role = 'staff';
+      staffId = staff.id;
+      staffName = staff.fullName;
     }
 
     req.user = {
       userId: user.id,
-      role: user.role,
+      role,
       companyName: user.companyName,
+      status: user.status,
+      staffId,
+      staffName,
     };
 
     next();
@@ -66,7 +86,7 @@ export async function requireAuth(req: Request, res: Response, next: NextFunctio
 }
 
 /**
- * requireTenant — requireAuth + block Super Admin from tenant pages.
+ * requireTenant â€” requireAuth + block Super Admin from tenant pages.
  * ZERO-TRUST: Super Admin NEVER accesses business data.
  */
 export async function requireTenant(req: Request, res: Response, next: NextFunction) {
@@ -76,12 +96,52 @@ export async function requireTenant(req: Request, res: Response, next: NextFunct
         error: 'Super Admin cannot access tenant business data.',
       });
     }
+    if (req.user?.status !== 'active') {
+      return res.status(403).json({
+        error: 'Account is not active.',
+        status: req.user?.status
+      });
+    }
+    
     next();
   });
 }
 
 /**
- * requireSuperAdmin — only super_admin role allowed.
+ * requireTenantOwner - requireTenant + blocks staff (TenantUser) sessions.
+ * Phase 6.10H Part 2: only the tenant's own login (never a staff seat) may
+ * manage the team roster, company profile/settings, or billing-adjacent
+ * pages. A staff member always has req.user.staffId set; the tenant owner
+ * never does.
+ */
+export async function requireTenantOwner(req: Request, res: Response, next: NextFunction) {
+  await requireTenant(req, res, () => {
+    if (req.user?.staffId) {
+      return res.status(403).json({ error: 'Only the account owner can do this. Ask your company administrator.' });
+    }
+    next();
+  });
+}
+
+/**
+ * requireNotStaff - a lighter version of requireTenantOwner for endpoints
+ * that BOTH a tenant owner and a Super Admin may legitimately call on their
+ * own account (e.g. revoking their own sessions). Unlike requireTenantOwner,
+ * this does NOT route through requireTenant, so it never blocks Super Admin
+ * or checks tenant-active status - it only blocks a staff (TenantUser)
+ * session from acting on behalf of the tenant it belongs to.
+ */
+export async function requireNotStaff(req: Request, res: Response, next: NextFunction) {
+  await requireAuth(req, res, () => {
+    if (req.user?.staffId) {
+      return res.status(403).json({ error: 'Only the account owner can do this. Ask your company administrator.' });
+    }
+    next();
+  });
+}
+
+/**
+ * requireSuperAdmin â€” only super_admin role allowed.
  */
 export async function requireSuperAdmin(req: Request, res: Response, next: NextFunction) {
   await requireAuth(req, res, () => {
@@ -93,7 +153,7 @@ export async function requireSuperAdmin(req: Request, res: Response, next: NextF
 }
 
 /**
- * requireAdminOrSuperAdmin — admin or super_admin only.
+ * requireAdminOrSuperAdmin â€” admin or super_admin only.
  */
 export async function requireAdminOrSuperAdmin(req: Request, res: Response, next: NextFunction) {
   await requireAuth(req, res, () => {
@@ -105,7 +165,7 @@ export async function requireAdminOrSuperAdmin(req: Request, res: Response, next
 }
 
 /**
- * assertTenantOwnership — verify a record belongs to the current tenant.
+ * assertTenantOwnership â€” verify a record belongs to the current tenant.
  * Call before any view/edit/delete to prevent IDOR attacks.
  */
 export async function assertTenantOwnership(
@@ -139,3 +199,8 @@ export async function assertTenantOwnership(
 
   return !!record;
 }
+
+
+
+
+

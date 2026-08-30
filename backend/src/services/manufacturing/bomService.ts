@@ -144,6 +144,10 @@ const explodeRecursive = async (userId: number, itemId: number, requiredQty: Dec
     let bom;
     if (specificBomId) {
         bom = await prisma.billOfMaterial.findUnique({ where: { id: specificBomId }, include: { items: true } });
+        // SECURITY: specificBomId can originate from a client-supplied value stored
+        // earlier (e.g. ProductionOrder.bomId); verify it belongs to this tenant
+        // before exploding its recipe.
+        if (bom && bom.userId !== userId) bom = null;
     } else {
         bom = await prisma.billOfMaterial.findFirst({
             where: { userId, finishedGoodItemId: itemId, status: 'ACTIVE' },

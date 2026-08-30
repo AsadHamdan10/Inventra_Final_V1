@@ -34,8 +34,6 @@ async function main() {
     },
   });
 
-  // Explicitly revoke any existing sessions for this Super Admin to enforce security
-  // when the bootstrap password changes.
   const revoked = await prisma.refreshToken.updateMany({
     where: { userId: superAdmin.id, revokedAt: null },
     data: { revokedAt: new Date() }
@@ -45,7 +43,65 @@ async function main() {
   if (revoked.count > 0) {
     console.log(`?? Revoked ${revoked.count} previous Super Admin sessions.`);
   }
-  console.log('??  Store the SUPER_ADMIN_PASSWORD safely in your .env file.');
+
+  console.log('?? Seeding INVENTRA SaaS Plans...');
+
+  // Phase 6.10F: Strict Business Model Plans
+  // Trading Annual: ?3,499
+  // Trading + Manufacturing Annual: ?4,699
+  // (No Free Plans)
+
+  const plan1 = await prisma.saaSPlan.upsert({
+    where: { code: 'TRADING_ANNUAL' },
+    update: {
+      annualPrice: 3499.00,
+      businessType: 'TRADING',
+      name: 'Trading Annual',
+      isActive: true
+    },
+    create: {
+      code: 'TRADING_ANNUAL',
+      name: 'Trading Annual',
+      description: 'Core Trading & Finance ERP',
+      annualPrice: 3499.00,
+      businessType: 'TRADING',
+      currency: 'INR',
+      isActive: true
+    }
+  });
+  console.log(`? SaaS Plan Upserted: ${plan1.code}`);
+
+  const plan2 = await prisma.saaSPlan.upsert({
+    where: { code: 'TRADING_MANUFACTURING_ANNUAL' },
+    update: {
+      annualPrice: 4699.00,
+      businessType: 'BOTH',
+      name: 'Trading + Manufacturing Annual',
+      isActive: true
+    },
+    create: {
+      code: 'TRADING_MANUFACTURING_ANNUAL',
+      name: 'Trading + Manufacturing Annual',
+      description: 'Full Production & Execution ERP',
+      annualPrice: 4699.00,
+      businessType: 'BOTH',
+      currency: 'INR',
+      isActive: true
+    }
+  });
+  console.log(`? SaaS Plan Upserted: ${plan2.code}`);
+
+  // Deactivate any legacy plans that are not part of the active business model
+  const legacyPlans = await prisma.saaSPlan.updateMany({
+    where: { 
+      code: { notIn: ['TRADING_ANNUAL', 'TRADING_MANUFACTURING_ANNUAL'] }
+    },
+    data: { isActive: false }
+  });
+  if (legacyPlans.count > 0) {
+    console.log(`? Deactivated ${legacyPlans.count} legacy plans.`);
+  }
+
 }
 
 main()

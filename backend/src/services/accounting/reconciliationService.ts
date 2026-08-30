@@ -12,9 +12,17 @@ async function getFYRange(userId: number, financialYearId?: number) {
 
 // 2. TRIAL BALANCE
 export async function getTrialBalance(userId: number, financialYearId?: number) {
-    const { startDate, endDate } = await getFYRange(userId, financialYearId);
+    // NOTE: A Trial Balance is a cumulative snapshot of every account's running
+    // balance as of a point in time - not a report of movements within a single
+    // financial year. Only endDate (the FY's closing date, or 'no limit' when no
+    // FY is given) should ever bound this query. Using startDate here previously
+    // excluded every prior-year balance once a company had more than one
+    // financial year of history, so this report silently stopped reconciling
+    // with the Balance Sheet computed just below it in this same file (which
+    // correctly uses only 'lte: endDate' with no lower bound).
+    const { endDate } = await getFYRange(userId, financialYearId);
     
-    // Sum debits and credits for POSTED journals within the FY context
+    // Sum debits and credits for all POSTED journals up to endDate
     const lines = await prisma.journalLine.groupBy({
         by: ['accountId'],
         _sum: { debit: true, credit: true },
@@ -22,7 +30,7 @@ export async function getTrialBalance(userId: number, financialYearId?: number) 
             journalEntry: {
                 userId,
                 status: 'POSTED',
-                journalDate: { gte: startDate, lte: endDate }
+                journalDate: { lte: endDate }
             }
         }
     });

@@ -1,9 +1,11 @@
 import { Router } from "express";
 import { ProductionOrderController } from "../controllers/productionOrderController";
 import { requireAuth } from "../middlewares/auth";
+import { requireManufacturingEntitlement } from "../middlewares/entitlement";
 
 const router = Router();
 router.use(requireAuth);
+router.use(requireManufacturingEntitlement);
 
 router.get("/", ProductionOrderController.list);
 router.get("/:id", ProductionOrderController.get);

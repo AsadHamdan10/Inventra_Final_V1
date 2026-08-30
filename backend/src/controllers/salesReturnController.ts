@@ -3,7 +3,9 @@ import { assertFinancialPeriodOpen } from '../services/financialPeriodService';
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
-import { determineInterState, calculateGstBreakdown } from './saleController';
+import { calculateGstBreakdown } from './saleController';
+import { determineInterStateByGstin } from '../utils/gstStateUtil';
+import { safeDecrypt } from '../utils/crypto';
 
 
 const prisma = new PrismaClient();
@@ -67,7 +69,14 @@ export const createSalesReturn = async (req: Request, res: Response) => {
         if (sale.status === 'CANCELLED') return res.status(400).json({ error: 'Cannot return a cancelled sale.' });
 
         const customer = await prisma.customer.findUnique({ where: { id: sale.customerId! } });
-        const isInterState = determineInterState(tenant.state, customer?.deliveryAddress);
+        // GST FIX: was comparing tenant.state against the customer's full
+        // deliveryAddress string - now derived from GST State Codes.
+        const isInterState = determineInterStateByGstin(
+          safeDecrypt(tenant.gstin) || null,
+          tenant.state || null,
+          safeDecrypt(customer?.gstin) || null,
+          null
+        );
         let totalTaxable = 0, totalGst = 0, igstAmount = 0, cgstAmount = 0, sgstAmount = 0, grandTotal = 0;
 
         const returnItemsData: any[] = [];
@@ -97,7 +106,7 @@ export const createSalesReturn = async (req: Request, res: Response) => {
             const itemGst = Number((itemTaxable * (gstPct / 100)).toFixed(2));
             const itemTotal = Number((itemTaxable + itemGst).toFixed(2));
 
-            const breakdown = {igst:0,cgst:0,sgst:0,totalGst:0};
+            const breakdown = calculateGstBreakdown(itemTaxable, gstPct, isInterState);
             igstAmount += breakdown.igst;
             cgstAmount += breakdown.cgst;
             sgstAmount += breakdown.sgst;
@@ -159,7 +168,12 @@ export const updateSalesReturn = async (req: Request, res: Response) => {
         const tenant = await prisma.user.findUnique({ where: { id: userId } });
         const sale = ret.sale;
                 const customer = await prisma.customer.findUnique({ where: { id: sale.customerId! } });
-        const isInterState = determineInterState(tenant?.state, customer?.deliveryAddress);
+        const isInterState = determineInterStateByGstin(
+          safeDecrypt(tenant?.gstin) || null,
+          tenant?.state || null,
+          safeDecrypt(customer?.gstin) || null,
+          null
+        );
 
         let totalTaxable = 0, totalGst = 0, igstAmount = 0, cgstAmount = 0, sgstAmount = 0, grandTotal = 0;
         const returnItemsData: any[] = [];
@@ -189,7 +203,7 @@ export const updateSalesReturn = async (req: Request, res: Response) => {
             const itemGst = Number((itemTaxable * (gstPct / 100)).toFixed(2));
             const itemTotal = Number((itemTaxable + itemGst).toFixed(2));
 
-            const breakdown = {igst:0,cgst:0,sgst:0,totalGst:0};
+            const breakdown = calculateGstBreakdown(itemTaxable, gstPct, isInterState);
             igstAmount += breakdown.igst;
             cgstAmount += breakdown.cgst;
             sgstAmount += breakdown.sgst;

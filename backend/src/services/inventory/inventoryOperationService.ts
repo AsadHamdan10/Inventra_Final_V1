@@ -6,6 +6,15 @@ export const postStockTransfer = async (userId: number, transferNo: string, tran
     return prisma.$transaction(async (tx) => {
         if (sourceWarehouseId === destinationWarehouseId) throw new Error("Source and destination warehouse cannot be the same");
 
+        // SECURITY: both warehouse IDs are client-supplied and must belong to this tenant,
+        // otherwise stock could be transferred into/out of another tenant's warehouse.
+        const [srcWh, dstWh] = await Promise.all([
+            tx.warehouse.findUnique({ where: { id: sourceWarehouseId }, select: { userId: true } }),
+            tx.warehouse.findUnique({ where: { id: destinationWarehouseId }, select: { userId: true } }),
+        ]);
+        if (!srcWh || srcWh.userId !== userId) throw new Error("Source warehouse not found");
+        if (!dstWh || dstWh.userId !== userId) throw new Error("Destination warehouse not found");
+
         const transfer = await tx.stockTransfer.create({
             data: {
                 userId,
@@ -26,7 +35,8 @@ export const postStockTransfer = async (userId: number, transferNo: string, tran
             // Lock material
             await tx.$executeRaw`SELECT id FROM materials WHERE id = ${item.materialId} FOR UPDATE`;
             const material = await tx.material.findUnique({ where: { id: item.materialId } });
-            if (!material) throw new Error(`Material ${item.materialId} not found`);
+            // SECURITY: materialId is client-supplied and must be tenant-scoped.
+            if (!material || material.userId !== userId) throw new Error(`Material ${item.materialId} not found`);
 
             // Validate warehouse stock
             // In a full implementation, we'd have a WarehouseStock model or calculate it.
@@ -36,7 +46,7 @@ export const postStockTransfer = async (userId: number, transferNo: string, tran
 
             let remainingToConsume = qty;
             const layers = await tx.inventoryLayer.findMany({
-                where: { materialId: item.materialId, warehouseId: sourceWarehouseId, remainingQty: { gt: 0 } },
+                where: { userId, materialId: item.materialId, warehouseId: sourceWarehouseId, remainingQty: { gt: 0 } },
                 orderBy: { receivedDate: 'asc' }
             });
 
@@ -47,7 +57,10 @@ export const postStockTransfer = async (userId: number, transferNo: string, tran
                 if (remainingToConsume <= 0) break;
                 const consumeQty = Math.min(Number(layer.remainingQty), remainingToConsume);
                 const costPerUnit = Number(safeDecrypt(layer.unitCostEnc));
-                totalActualCost = 0;
+                // BUGFIX: this was resetting totalActualCost to 0 every iteration,
+                // so every stock transfer's actualCost was always saved as ₹0
+                // regardless of the real FIFO layer cost. Accumulate instead.
+                totalActualCost += consumeQty * costPerUnit;
 
                 layerConsumptions.push({
                     layerId: layer.id,

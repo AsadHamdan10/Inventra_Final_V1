@@ -38,6 +38,7 @@ import notificationRoutes from './routes/notifications';
 import adminRoutes from './routes/admin';
 import eWayBillRoutes from './routes/eWayBillRoutes';
 import gstFilingRoutes from './routes/gstFilingRoutes';
+import teamRoutes from './routes/team';
 // Procurement
 import purchaseRequisitions from './routes/purchaseRequisitions';
 import purchaseQuotations from './routes/purchaseQuotations';
@@ -53,6 +54,8 @@ import routings from './routes/routings';
 import productionOrders from './routes/productionOrders';
 // Finance
 import financialStatements from './routes/financialStatements';
+import coaRoutes from './routes/coa';
+import journalRoutes from './routes/journals';
 
 
 const app = express();
@@ -137,6 +140,7 @@ app.use(`${API}/investors`, investorRoutes);
 app.use(`${API}/intermediary`, intermediaryRoutes);
 app.use(`${API}/gst`, gstRoutes);
 app.use(`${API}/gst/returns`, gstFilingRoutes);
+app.use(`${API}/team`, teamRoutes);
 app.use(`${API}/bank`, bankRoutes);
 app.use(`${API}/reports`, reportRoutes);
 app.use(`${API}/dashboard`, dashboardRoutes);
@@ -159,6 +163,11 @@ app.use(`${API}/routings`, routings);
 app.use(`${API}/production-orders`, productionOrders);
 // Finance
 app.use(`${API}/finance`, financialStatements);
+// Phase 6.10I fix: these two route files existed with full working
+// controllers (coaController/journalController) but were never mounted,
+// so the Chart of Accounts and Journal Entries pages 404'd on every call.
+app.use(`${API}/coa`, coaRoutes);
+app.use(`${API}/journals`, journalRoutes);
 
 
 // ── Error Handlers ────────────────────────────────────────────

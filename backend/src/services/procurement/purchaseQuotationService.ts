@@ -2,6 +2,27 @@ import prisma from '../../utils/prisma';
 import { generateDocumentNumber } from '../../utils/tenantId';
 
 export const createPurchaseQuotation = async (userId: number, data: any) => {
+    // SECURITY: vendorId/warehouseId/purchaseRequisitionId/materialId are
+    // client-supplied and must be tenant-scoped.
+    if (data.vendorId) {
+        const vendor = await prisma.vendor.findUnique({ where: { id: data.vendorId }, select: { userId: true } });
+        if (!vendor || vendor.userId !== userId) throw new Error('Vendor not found');
+    }
+    if (data.warehouseId) {
+        const wh = await prisma.warehouse.findUnique({ where: { id: data.warehouseId }, select: { userId: true } });
+        if (!wh || wh.userId !== userId) throw new Error('Warehouse not found');
+    }
+    if (data.purchaseRequisitionId) {
+        const pr = await prisma.purchaseRequisition.findUnique({ where: { id: data.purchaseRequisitionId }, select: { userId: true } });
+        if (!pr || pr.userId !== userId) throw new Error('Purchase Requisition not found');
+    }
+    for (const item of data.items || []) {
+        if (item.materialId) {
+            const mat = await prisma.material.findUnique({ where: { id: item.materialId }, select: { userId: true } });
+            if (!mat || mat.userId !== userId) throw new Error(`Material ${item.materialId} not found`);
+        }
+    }
+
     const quotationNo = await generateDocumentNumber('PURCHASE_QUOTATION', userId, data.quotationDate);
     
     return prisma.purchaseQuotation.create({
@@ -51,8 +72,10 @@ export const updatePurchaseQuotationStatus = async (userId: number, id: number, 
 };
 
 export const getPurchaseQuotation = async (userId: number, id: number) => {
-    return prisma.purchaseQuotation.findUnique({
-        where: { id },
+    // SECURITY FIX: previously ignored `userId` entirely (IDOR) — any tenant
+    // could fetch any other tenant's purchase quotation by id.
+    return prisma.purchaseQuotation.findFirst({
+        where: { id, userId },
         include: { items: true, vendor: true, warehouse: true }
     });
 };

@@ -3,7 +3,8 @@ import { postSaleAccounting } from "../services/accounting/accountingIntegration
 import { safeDecrypt, encryptIfPresent } from "../utils/crypto";
 import { encryptFinancialData } from "../utils/financialCrypto";
 import { generateDocumentNumber } from "../utils/tenantId";
-import { determineInterState, calculateGstBreakdown } from "../controllers/saleController";
+import { calculateGstBreakdown } from "../controllers/saleController";
+import { determineInterStateByGstin } from "../utils/gstStateUtil";
 function toTextOrNull(v: any) { return v ? String(v).trim() : null; }
 function toDateOrNull(v: any) { return v ? new Date(v) : null; }
 
@@ -42,7 +43,21 @@ export async function createSaleInternal(userId: number, data: any, tx: any): Pr
   
   const customerObj = await tx.customer.findUnique({ where: { id: customerId } });
   const companyObj = await tx.user.findUnique({ where: { id: userId } });
-  if (!customerObj) throw new Error("Customer not found.");
+  // GST FIX: previously compared companyObj.state to a nonexistent
+  // customerObj.state field (Customer has no `state` column), which meant
+  // this ALWAYS fell through to trusting the client-supplied `data.shipState`
+  // with no backend verification. Now derived authoritatively from GST State
+  // Codes (see utils/gstStateUtil.ts) — never from client input.
+  const isInterState = determineInterStateByGstin(
+    safeDecrypt(companyObj?.gstin) || null,
+    companyObj?.state || null,
+    safeDecrypt(customerObj?.gstin) || null,
+    null
+  );
+  // SECURITY: customerId is client-supplied. Without this check, a tenant
+  // could attach another tenant's customer record to their own sale,
+  // exposing that customer's decrypted name/GSTIN/address in the response.
+  if (!customerObj || customerObj.userId !== userId) throw new Error("Customer not found.");
 
   let invNo = data.invoiceNo;
   if (!invNo || invNo.trim() === "") {
@@ -63,7 +78,11 @@ export async function createSaleInternal(userId: number, data: any, tx: any): Pr
     const item = items[i];
     await tx.$executeRaw`SELECT id FROM materials WHERE id = ${item.materialId} FOR UPDATE`;
     const material = await tx.material.findUnique({ where: { id: item.materialId } });
-    if (!material) throw new Error(`Material ${item.materialId} not found.`);
+    // SECURITY: materialId is client-supplied. Without this check, a tenant
+    // could reference another tenant's material and this function would
+    // check/decrement THEIR stock, consume THEIR FIFO inventory layers, and
+    // read THEIR cost data to compute this tenant's profit margin.
+    if (!material || material.userId !== userId) throw new Error(`Material ${item.materialId} not found.`);
     
     // Only check stock and consume layers if inventoryTracked
     const isTracked = material.inventoryTracked;
@@ -84,7 +103,6 @@ export async function createSaleInternal(userId: number, data: any, tx: any): Pr
     totalGst += gstAmount;
     
     // Simplistic CGST/SGST split for now, wait... interState check?
-    const isInterState = determineInterState(companyObj?.state, customerObj?.state || data.shipState);
     const breakdown = calculateGstBreakdown(taxableAmount, gstPercent, isInterState);
     igstAmount += breakdown.igst;
     cgstAmount += breakdown.cgst;
@@ -94,7 +112,7 @@ export async function createSaleInternal(userId: number, data: any, tx: any): Pr
     
     if (isTracked) {
       let remainingToConsume = qty;
-      const whereClause: any = { materialId: item.materialId, remainingQty: { gt: 0 } };
+      const whereClause: any = { userId, materialId: item.materialId, remainingQty: { gt: 0 } };
       if (item.warehouseId) whereClause.warehouseId = item.warehouseId;
       
       const layers = await tx.inventoryLayer.findMany({

@@ -6,7 +6,8 @@ import { safeDecrypt } from '../utils/crypto';
 import { auditLog } from '../services/auditService';
 import { assertTenantOwnership } from '../middlewares/auth';
 import { generateDocumentNumber } from '../utils/tenantId';
-import { determineInterState, calculateGstBreakdown, createSaleInternal } from './saleController';
+import { calculateGstBreakdown, createSaleInternal } from './saleController';
+import { determineInterStateByGstin } from '../utils/gstStateUtil';
 
 const quotationItemSchema = z.object({
   materialName: z.string().min(1),
@@ -85,8 +86,22 @@ export const createQuotation: import('express').RequestHandler = async (req: Req
 
         const tenant = await prisma.user.findUnique({ where: { id: userId } });
     if (!tenant) return res.status(401).json({ error: 'Tenant not found.' });
-    const customer = await prisma.customer.findUnique({ where: { id: data.customerId! } });
-    const isInterState = determineInterState(tenant.state, customer?.deliveryAddress);
+    const customer = data.customerId ? await prisma.customer.findUnique({ where: { id: data.customerId } }) : null;
+    // SECURITY: customerId is client-supplied and must be tenant-scoped, otherwise
+    // this quotation could be linked to (and later expose, via ?customer include)
+    // another tenant's customer record.
+    if (data.customerId && (!customer || customer.userId !== userId)) {
+      return res.status(400).json({ error: 'Customer not found.' });
+    }
+    // GST FIX: was comparing tenant.state against the customer's full
+    // deliveryAddress string (not a state at all) - almost always evaluated
+    // as inter-state. Now derived from GST State Codes.
+    const isInterState = determineInterStateByGstin(
+      safeDecrypt(tenant.gstin) || null,
+      tenant.state || null,
+      safeDecrypt(customer?.gstin) || null,
+      null
+    );
 
     const result = await prisma.$transaction(async (tx) => {
         let totalTaxable = 0, totalGst = 0;
@@ -157,8 +172,22 @@ export const updateQuotation: import('express').RequestHandler = async (req: imp
 
         const tenant = await prisma.user.findUnique({ where: { id: userId } });
     if (!tenant) return res.status(401).json({ error: 'Tenant not found.' });
-    const customer = await prisma.customer.findUnique({ where: { id: data.customerId! } });
-    const isInterState = determineInterState(tenant.state, customer?.deliveryAddress);
+    const customer = data.customerId ? await prisma.customer.findUnique({ where: { id: data.customerId } }) : null;
+    // SECURITY: customerId is client-supplied and must be tenant-scoped, otherwise
+    // this quotation could be linked to (and later expose, via ?customer include)
+    // another tenant's customer record.
+    if (data.customerId && (!customer || customer.userId !== userId)) {
+      return res.status(400).json({ error: 'Customer not found.' });
+    }
+    // GST FIX: was comparing tenant.state against the customer's full
+    // deliveryAddress string (not a state at all) - almost always evaluated
+    // as inter-state. Now derived from GST State Codes.
+    const isInterState = determineInterStateByGstin(
+      safeDecrypt(tenant.gstin) || null,
+      tenant.state || null,
+      safeDecrypt(customer?.gstin) || null,
+      null
+    );
 
     const result = await prisma.$transaction(async (tx) => {
         const existing = await tx.quotation.findFirst({ where: { id, userId } });

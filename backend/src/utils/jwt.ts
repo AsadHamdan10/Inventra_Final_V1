@@ -5,6 +5,11 @@ export interface JwtPayload {
   userId: number;
   role: string;
   companyName: string;
+  // Phase 6.10H Part 2 - present only for a staff (TenantUser) session. userId
+  // above is always the TENANT's own id, never the staff row's id - this is
+  // what keeps every existing userId-scoped business query working unchanged.
+  staffId?: number;
+  staffName?: string;
 }
 
 export function signAccessToken(payload: JwtPayload): string {

@@ -24,6 +24,15 @@ const mobileRegex = /^[6-9]\d{9}$/;
 const loginSchema = z.object({
   username: z.string().min(1, 'Username or email is required.'),
   password: z.string().min(1, 'Password is required.'),
+  // Phase 6.10H Part 3 - the client declares which surface it's logging in
+  // from. The web app (including the responsive site in a phone's browser)
+  // sends 'DESKTOP' or omits this entirely; the installed Android app (a TWA
+  // wrapping this same frontend - see docs/PLAY_STORE_DEPLOYMENT_GUIDE.md)
+  // detects that via isMobileAppSession() and sends 'MOBILE'. This is a
+  // self-reported client signal, not a security boundary - the boundary is
+  // the platformAccess entitlement check below, which only ever restricts
+  // MOBILE logins. DESKTOP/web access is never gated by this field.
+  platform: z.enum(['DESKTOP', 'MOBILE']).optional().default('DESKTOP'),
 });
 
 const registerSchema = z.object({
@@ -36,6 +45,11 @@ const registerSchema = z.object({
   industry: z.string().optional().default(""),
   plan: z.string().optional().default("V1_BASIC"),
   billingCycle: z.string().optional().default("YEARLY"),
+  // Phase 6.10H: the frontend may suggest which catalog plan the visitor picked in
+  // step 3 of registration, but this is ONLY a lookup key - see register() below,
+  // which re-validates it against the live, Super-Admin-configured catalog and
+  // never trusts any price/duration/user-count/platform field from the client.
+  planId: z.number().int().positive().optional(),
 });
 
 const changePasswordSchema = z.object({
@@ -82,7 +96,117 @@ function buildUserResponse(user: any) {
     pincode:             safeDecrypt(user.pincode) || '',
     country:             user.country || 'India',
     panNumber:           safeDecrypt(user.panNumber) || '',
+    // Bug fix: this was never populated, so the sidebar's Manufacturing section
+    // (AppLayout.tsx: user?.businessType === 'BOTH' || 'MANUFACTURING') could
+    // never show for ANY tenant, even ones legitimately entitled to it.
+    businessType:        user.tenantConfig?.businessType || 'TRADING',
   };
+}
+
+// Phase 6.10H Part 2 - a staff (TenantUser) session reuses the tenant's own
+// profile/company data (billing, GSTIN, address, etc. all belong to the
+// tenant, not the staff member) but overrides identity fields with the
+// staff member's own login/name and forces role to 'staff'.
+function buildStaffUserResponse(staff: any, tenant: any) {
+  const base = buildUserResponse(tenant);
+  return {
+    ...base,
+    role:                'staff',
+    username:            staff.username,
+    email:               staff.email,
+    staffId:             staff.id,
+    staffName:           staff.fullName,
+    forcePasswordChange: staff.forcePasswordChange,
+  };
+}
+
+// ── Platform Access Entitlement (Phase 6.10H Part 3) ─────────────
+// Mobile app access (the installed Android TWA) is a paid add-on tier on top
+// of the base desktop/web product - see SaaSPlan.platformAccess. Desktop/web
+// login is NEVER gated here (it's the baseline every tenant already has);
+// only a login that self-declares platform: 'MOBILE' is checked against the
+// tenant's current subscription. Returns true and does nothing if allowed;
+// on rejection it writes the 403 response itself and returns false, so
+// callers just need `if (!(await assertPlatformEntitlement(...))) return;`.
+async function assertPlatformEntitlement(
+  tenantId: number,
+  platform: 'DESKTOP' | 'MOBILE',
+  req: Request,
+  res: Response
+): Promise<boolean> {
+  if (platform !== 'MOBILE') return true;
+
+  // Phase 6.10I fix: SaaSSubscription.status is a payment-progress marker
+  // (UNPAID -> PARTIALLY_PAID -> PAID), never the literal string 'ACTIVE' -
+  // no code path ever writes that value (see adminController.ts's own
+  // comment on this). The old { in: ['ACTIVE','UNPAID'] } filter silently
+  // dropped every fully-paid subscription from this query, degrading a
+  // paying tenant back to fail-closed defaults. "Current subscription"
+  // means the newest one that hasn't been explicitly cancelled.
+  const sub = await prisma.saaSSubscription.findFirst({
+    where: { userId: tenantId, status: { not: 'CANCELLED' } },
+    orderBy: { createdAt: 'desc' },
+  });
+  // Fail closed: no subscription on record means no mobile entitlement, same
+  // convention used for seat limits and the manufacturing entitlement gate.
+  const access = sub?.platformAccess || 'DESKTOP';
+  if (access === 'MOBILE' || access === 'DESKTOP_MOBILE') return true;
+
+  await auditLog(tenantId, 'login_blocked', 'Mobile app login blocked - plan does not include mobile access', req);
+  res.status(403).json({
+    success: false,
+    error: 'Your current plan does not include mobile app access. Upgrade your plan to use the Inventra mobile app.',
+  });
+  return false;
+}
+
+// ── Staff Login (Phase 6.10H Part 2) ────────────────────────────
+// A staff member has their own row in TenantUser with their own username
+// and password, but their JWT's userId claim is always set to the TENANT's
+// own id - never their own TenantUser.id. This means every existing
+// `where: { userId: req.user.userId }` query across the app (24+
+// controllers) continues to scope correctly to the tenant's data with zero
+// changes. Their real identity travels via the additive staffId/staffName
+// claims, and role is forced to 'staff'.
+async function handleStaffLogin(staff: any, password: string, platform: 'DESKTOP' | 'MOBILE', req: Request, res: Response) {
+  if (staff.status !== 'active') {
+    await auditLog(0, 'login_blocked', `Staff account disabled: ${staff.username}`, req);
+    return res.status(403).json({ success: false, error: 'Your staff access has been disabled. Please contact your company administrator.' });
+  }
+
+  const isValid = await bcrypt.compare(password, staff.password);
+  if (!isValid) {
+    await auditLog(0, 'failed_login', `Incorrect password for staff: ${staff.username}`, req);
+    return res.status(401).json({ success: false, error: 'Invalid username or password.' });
+  }
+
+  const tenant = await prisma.user.findUnique({ where: { id: staff.tenantId }, include: { tenantConfig: true } });
+  if (!tenant || (tenant.role !== 'super_admin' && tenant.status !== 'active')) {
+    await auditLog(0, 'login_blocked', `Staff login blocked: tenant account not active (${staff.username})`, req);
+    return res.status(403).json({ success: false, error: 'Your company account is not currently active. Please contact your administrator.' });
+  }
+
+  if (!(await assertPlatformEntitlement(tenant.id, platform, req, res))) return;
+
+  const payload = { userId: tenant.id, role: 'staff', companyName: tenant.companyName, staffId: staff.id, staffName: staff.fullName };
+  const accessToken = signAccessToken(payload);
+  const refreshTok = signRefreshToken(payload);
+
+  const expiresAt = new Date();
+  expiresAt.setDate(expiresAt.getDate() + 7);
+  await prisma.refreshToken.create({ data: { userId: tenant.id, token: refreshTok, expiresAt } });
+
+  await auditLog(tenant.id, 'login', `Staff login: ${staff.username}`, req);
+
+  res.cookie('refreshToken', refreshTok, {
+    httpOnly: true,
+    secure:   process.env.NODE_ENV === 'production',
+    sameSite: 'lax',
+    maxAge:   7 * 24 * 60 * 60 * 1000,
+    path:     '/api/v1/auth/refresh',
+  });
+
+  res.json({ success: true, accessToken, user: buildStaffUserResponse(staff, tenant) });
 }
 
 // ── Login ──────────────────────────────────────────────────────
@@ -93,13 +217,20 @@ export async function login(req: Request, res: Response, next: NextFunction) {
       return res.status(400).json({ success: false, error: 'Username and password are required.', message: 'Username and password are required.' });
     }
 
-    const { username, password } = parsed.data;
+    const { username, password, platform } = parsed.data;
 
     const user = await prisma.user.findFirst({
       where: { OR: [{ username }, { email: username }] },
+      include: { tenantConfig: true },
     });
 
     if (!user) {
+      // Phase 6.10H Part 2 - the username may belong to a staff (TenantUser)
+      // login rather than a tenant's own account. Try that before failing.
+      const staffCandidate = await prisma.tenantUser.findUnique({ where: { username } });
+      if (staffCandidate) {
+        return handleStaffLogin(staffCandidate, password, platform, req, res);
+      }
       await auditLog(0, 'failed_login', `User not found: ${username}`, req);
       return res.status(401).json({ success: false, error: 'Invalid username or password.' });
     }
@@ -160,6 +291,8 @@ export async function login(req: Request, res: Response, next: NextFunction) {
         status: user.status,
       });
     }
+
+    if (user.role !== 'super_admin' && !(await assertPlatformEntitlement(user.id, platform, req, res))) return;
 
     const payload = { userId: user.id, role: user.role, companyName: user.companyName };
     const accessToken  = signAccessToken(payload);
@@ -229,6 +362,35 @@ export async function register(req: Request, res: Response, next: NextFunction) 
       return res.status(409).json({ success: false, field: "companyName", message: "Company is already registered." });
     }
 
+    // BACKEND-AUTHORITATIVE (Phase 6.10H): resolve the commercial plan from the
+    // live Super-Admin-configured catalog. The frontend may pass `planId` as a
+    // hint of what the visitor selected, but it is only used as a lookup key -
+    // it must be ACTIVE and must match the submitted businessType, or it is
+    // rejected outright. Nothing about price, duration, included users, or
+    // platform access is ever taken from the request body; all of that is read
+    // from the resolved SaaSPlan row. Only TRADING and BOTH are valid business
+    // types (no MANUFACTURING-only, no free plans).
+    const businessType: string = d.businessType === 'BOTH' ? 'BOTH' : 'TRADING';
+
+    let resolvedPlan;
+    if (d.planId) {
+      resolvedPlan = await prisma.saaSPlan.findUnique({ where: { id: d.planId } });
+      if (!resolvedPlan || resolvedPlan.status !== 'ACTIVE' || resolvedPlan.businessType !== businessType) {
+        return res.status(400).json({ success: false, field: 'planId', message: 'Selected plan is no longer available. Please choose a plan again.' });
+      }
+    } else {
+      // No explicit selection (e.g. an older client) - fall back to the
+      // lowest-priced ACTIVE plan for the chosen business type.
+      resolvedPlan = await prisma.saaSPlan.findFirst({
+        where: { status: 'ACTIVE', businessType },
+        orderBy: { finalPrice: 'asc' },
+      });
+      if (!resolvedPlan) {
+        return res.status(400).json({ success: false, field: 'businessType', message: 'No active plan is currently available for this business type. Please contact us.' });
+      }
+    }
+    const derivedPlanCode = resolvedPlan.code;
+
     const randomStr = Math.random().toString(36).substring(2, 8).toUpperCase();
     const applicationRef = `INV-2026-${randomStr}`;
 
@@ -243,7 +405,7 @@ export async function register(req: Request, res: Response, next: NextFunction) 
         role:            "admin",
         status:          "pending",
         applicationRef,
-        plan:            d.plan,
+        plan:            derivedPlanCode,  // backend-derived only, frontend plan field ignored
         applicationSnapshot: {
           create: {
             applicationRef,
@@ -252,19 +414,18 @@ export async function register(req: Request, res: Response, next: NextFunction) 
             username: d.username,
             email: d.email,
             mobile: d.mobile,
-            businessType: d.businessType || "TRADING",
+            businessType: businessType,      // normalised: TRADING or BOTH only
             industry: d.industry || "",
-            plan: d.plan || "PROFESSIONAL",
-            billingCycle: d.billingCycle || "YEARLY",
+            plan: derivedPlanCode,           // backend-derived authoritative plan code
+            billingCycle: resolvedPlan.durationMonths >= 24 ? `${Math.round(resolvedPlan.durationMonths / 12)}_YEAR` : "YEARLY",
             originalStatus: "pending"
           }
         }
       }
     });
 
-    await auditLog(user.id, "USER_REGISTERED", `Application ${applicationRef} submitted`, req);
-    
-    // Import dynamically to avoid circular issues or just require
+    await auditLog(user.id, "USER_REGISTERED", `Application ${applicationRef} submitted. Plan: ${derivedPlanCode} (₹${resolvedPlan.finalPrice}, ${resolvedPlan.durationMonths}mo, ${resolvedPlan.includedUsers} users, ${resolvedPlan.platformAccess})`, req);
+
     const { sendRegistrationConfirmation, sendSuperAdminNotification } = require("../services/emailService");
     await sendRegistrationConfirmation(d.email, d.companyName, applicationRef);
     await sendSuperAdminNotification(d.companyName, d.username, d.email, d.mobile, applicationRef);
@@ -297,7 +458,24 @@ export async function refreshToken(req: Request, res: Response, next: NextFuncti
     const user = await prisma.user.findUnique({ where: { id: payload.userId } });
     if (!user) return res.status(401).json({ success: false, message: 'User not found.' });
 
-    const accessToken = signAccessToken({ userId: user.id, role: user.role, companyName: user.companyName });
+    // Phase 6.10H Part 2 - SECURITY: a refresh token minted for a staff
+    // session carries staffId. If we dropped it here, the next access token
+    // would silently escalate to full tenant-owner privileges (role would
+    // fall back to user.role). Re-verify the staff row is still active on
+    // EVERY refresh, exactly like requireAuth does per-request, and carry
+    // the staff claims forward unchanged.
+    let newPayload: { userId: number; role: string; companyName: string; staffId?: number; staffName?: string };
+    if (payload.staffId) {
+      const staff = await prisma.tenantUser.findUnique({ where: { id: payload.staffId } });
+      if (!staff || staff.status !== 'active' || staff.tenantId !== user.id) {
+        return res.status(401).json({ success: false, message: 'Your staff access has been disabled. Please log in again.' });
+      }
+      newPayload = { userId: user.id, role: 'staff', companyName: user.companyName, staffId: staff.id, staffName: staff.fullName };
+    } else {
+      newPayload = { userId: user.id, role: user.role, companyName: user.companyName };
+    }
+
+    const accessToken = signAccessToken(newPayload);
     res.json({ success: true, accessToken });
   } catch (err) { next(err); }
 }
@@ -325,6 +503,27 @@ export async function changePassword(req: Request, res: Response, next: NextFunc
     }
 
     const { currentPassword, newPassword } = parsed.data;
+
+    // Phase 6.10H Part 2 - a staff session's own credential lives on its
+    // TenantUser row, never on the tenant's own User row. req.user.userId
+    // always points to the TENANT's id (by design, so business-data queries
+    // keep working), so it must never be used to look up or overwrite a
+    // password when this is a staff session - that would silently check/
+    // change the tenant OWNER's password instead of the staff member's own.
+    if (req.user?.staffId) {
+      const staff = await prisma.tenantUser.findUnique({ where: { id: req.user.staffId } });
+      if (!staff) return res.status(404).json({ success: false, message: 'Staff account not found.' });
+
+      const isValid = await bcrypt.compare(currentPassword, staff.password);
+      if (!isValid) return res.status(400).json({ success: false, message: 'Current password is incorrect.' });
+
+      const hashed = await bcrypt.hash(newPassword, 12);
+      await prisma.tenantUser.update({ where: { id: staff.id }, data: { password: hashed, forcePasswordChange: false } });
+      await auditLog(req.user.userId, 'password_change', `Staff password changed: ${staff.username}`, req);
+
+      return res.json({ success: true, message: 'Password changed successfully.' });
+    }
+
     const userId = req.user!.userId;
     const user = await prisma.user.findUnique({ where: { id: userId }, include: { applicationSnapshot: true } });
     if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
@@ -345,9 +544,23 @@ export async function changePassword(req: Request, res: Response, next: NextFunc
 // ── Get Me ─────────────────────────────────────────────────────
 export async function getMe(req: Request, res: Response, next: NextFunction) {
   try {
-    const user = await prisma.user.findUnique({ where: { id: req.user!.userId } });
+    const user = await prisma.user.findUnique({ where: { id: req.user!.userId }, include: { tenantConfig: true } });
     if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
-    res.json(buildUserResponse(user));
+
+    if (req.user?.staffId) {
+      const staff = await prisma.tenantUser.findUnique({ where: { id: req.user.staffId } });
+      if (!staff || staff.status !== 'active') {
+        return res.status(401).json({ success: false, message: 'Your staff access has been disabled. Please contact your company administrator.' });
+      }
+      // Bug fix: pages that re-fetch the full profile (e.g. CompanyProfilePage)
+      // expect { user: {...} } - the same shape login() already returns - not
+      // the bare user object. This was previously unwrapped here, so every
+      // authApi.me() caller reading `data.user` silently got undefined and
+      // those pages rendered as empty/unavailable.
+      return res.json({ success: true, user: buildStaffUserResponse(staff, user) });
+    }
+
+    res.json({ success: true, user: buildUserResponse(user) });
   } catch (err) { next(err); }
 }
 

@@ -20,6 +20,12 @@ export const createRouting = async (userId: number, data: any) => {
         }
     }
 
+    // SECURITY: finishedGoodItemId is client-supplied and must be tenant-scoped.
+    if (data.finishedGoodItemId) {
+        const fg = await prisma.material.findUnique({ where: { id: data.finishedGoodItemId }, select: { userId: true } });
+        if (!fg || fg.userId !== userId) throw new Error("Finished good item not found");
+    }
+
     return prisma.routing.create({
         data: {
             userId,

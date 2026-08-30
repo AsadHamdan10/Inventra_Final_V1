@@ -12,6 +12,8 @@ import { postPurchaseAccounting } from '../services/accounting/accountingIntegra
 import { assertFinancialPeriodOpen } from '../services/financialPeriodService';
 import { assertTenantOwnership } from '../middlewares/auth';
 import { generateTenantId } from '../utils/tenantId';
+import { calculateGstBreakdown } from './saleController';
+import { determineInterStateByGstin } from '../utils/gstStateUtil';
 
 // ── Schemas ────────────────────────────────────────────────────
 
@@ -164,6 +166,65 @@ export const getPurchase: RequestHandler = async (req, res, next) => {
   }
 }
 
+
+// SECURITY/CORRECTNESS FIX: createPurchase/updatePurchase previously stored
+// totalTaxable/totalGst/igstAmount/cgstAmount/sgstAmount/grandTotal and every
+// item's taxableAmount/gstAmount/itemTotal exactly as submitted by the
+// client, with zero backend verification — unlike sales, which are fully
+// recalculated server-side in saleInternalService. This helper ports the
+// same pattern to purchases: recompute every figure from quantity/rate/GST%
+// and the backend-authoritative inter-state determination, and IGNORE
+// whatever totals the client submitted.
+async function recalculatePurchaseFinancials(
+  userId: number,
+  vendorGstin: string | undefined,
+  items: { quantity: number; purchaseRate: number; gstPercent: number }[],
+  otherExpense: number,
+  roundOff: number
+) {
+  const tenant = await prisma.user.findUnique({ where: { id: userId }, select: { gstin: true, state: true } });
+  const isInterState = determineInterStateByGstin(
+    safeDecrypt(tenant?.gstin) || null,
+    tenant?.state || null,
+    vendorGstin ? vendorGstin.toUpperCase() : null,
+    null
+  );
+
+  let totalTaxable = 0, totalGst = 0, igstAmount = 0, cgstAmount = 0, sgstAmount = 0;
+  const recalculatedItems = items.map(item => {
+    const quantity = Number(item.quantity);
+    const rate = Number(item.purchaseRate);
+    const gstPercent = Number(item.gstPercent);
+    const taxableAmount = Number((quantity * rate).toFixed(2));
+    const breakdown = calculateGstBreakdown(taxableAmount, gstPercent, isInterState);
+    const gstAmount = Number(breakdown.totalGst.toFixed(2));
+    const itemTotal = Number((taxableAmount + gstAmount).toFixed(2));
+
+    totalTaxable += taxableAmount;
+    totalGst += gstAmount;
+    igstAmount += breakdown.igst;
+    cgstAmount += breakdown.cgst;
+    sgstAmount += breakdown.sgst;
+
+    return { taxableAmount, gstAmount, itemTotal };
+  });
+
+  const grandTotal = Number((totalTaxable + totalGst + Number(otherExpense || 0) - Number(roundOff || 0)).toFixed(2));
+
+  return {
+    isInterState,
+    recalculatedItems,
+    totals: {
+      totalTaxable: Number(totalTaxable.toFixed(2)),
+      totalGst: Number(totalGst.toFixed(2)),
+      igstAmount: Number(igstAmount.toFixed(2)),
+      cgstAmount: Number(cgstAmount.toFixed(2)),
+      sgstAmount: Number(sgstAmount.toFixed(2)),
+      grandTotal,
+    },
+  };
+}
+
 export const createPurchase: RequestHandler = async (req, res, next) => {
   try {
     const userId = req.user!.userId;
@@ -187,24 +248,29 @@ export const createPurchase: RequestHandler = async (req, res, next) => {
       ? enteredBillNo.trim()
       : await generateTenantId('BILL', userId);
 
+    const { recalculatedItems, totals } = await recalculatePurchaseFinancials(
+      userId, vendorGstin, items, data.otherExpense, data.roundOff
+    );
+
     const row = await prisma.purchase.create({
       data: {
         userId,
         billNo,
         ...data,
+        ...totals, // backend-authoritative — overrides whatever the client submitted above
         billDate:    new Date(data.billDate),
         paymentPaid: 0, // always starts at 0; use Payables page to record payments
         vendorGstin: encryptIfPresent(vendorGstin?.toUpperCase()),
         items: {
-  create: items.map(item => ({
+  create: items.map((item, i) => ({
   materialName: item.materialName,
   hsnCode: item.hsnCode,
   quantity: item.quantity,
 
   gstPercent: item.gstPercent,
-  taxableAmount: item.taxableAmount,
-  gstAmount: item.gstAmount,
-  itemTotal: item.itemTotal,
+  taxableAmount: recalculatedItems[i].taxableAmount,
+  gstAmount: recalculatedItems[i].gstAmount,
+  itemTotal: recalculatedItems[i].itemTotal,
 
   // Transitional dual-write: plaintext purchaseRate is written alongside
   // purchaseRateEnc, same rationale as totalPurchaseCost/grossProfit in
@@ -225,7 +291,7 @@ export const createPurchase: RequestHandler = async (req, res, next) => {
     await auditLog(
       userId,
       'data_create',
-      `Purchase: ${billNo} — ${data.vendorName} — ₹${data.grandTotal}`,
+      `Purchase: ${billNo} — ${data.vendorName} — ₹${row.grandTotal}`,
       req
     );
 
@@ -255,6 +321,10 @@ export const updatePurchase: RequestHandler = async (req, res, next) => {
 
     const { billNo, items, vendorGstin, ...data } = parsed.data;
 
+    const { recalculatedItems, totals } = await recalculatePurchaseFinancials(
+      userId, vendorGstin, items, data.otherExpense, data.roundOff
+    );
+
     // Replace line items
     await prisma.purchaseItem.deleteMany({ where: { purchaseId: id } });
 
@@ -263,20 +333,21 @@ export const updatePurchase: RequestHandler = async (req, res, next) => {
       data: {
         billNo,
         ...data,
+        ...totals, // backend-authoritative — overrides whatever the client submitted above
         billDate:    new Date(data.billDate),
         vendorGstin: encryptIfPresent(vendorGstin?.toUpperCase()),
         // paymentPaid is intentionally NOT updated here — it is
         // controlled exclusively by PayablePayment sync.
         items: {
-  create: items.map(item => ({
+  create: items.map((item, i) => ({
   materialName: item.materialName,
   hsnCode: item.hsnCode,
   quantity: item.quantity,
 
   gstPercent: item.gstPercent,
-  taxableAmount: item.taxableAmount,
-  gstAmount: item.gstAmount,
-  itemTotal: item.itemTotal,
+  taxableAmount: recalculatedItems[i].taxableAmount,
+  gstAmount: recalculatedItems[i].gstAmount,
+  itemTotal: recalculatedItems[i].itemTotal,
 
   purchaseRate: item.purchaseRate,
   purchaseRateEnc: encryptFinancialData(
@@ -575,5 +646,6 @@ export const deletePayablePayment: RequestHandler = async (req, res, next) => {
     next(err);
   }
 }
-export function determineInterStateVendor(...args: any[]): boolean { return false; }
-export function calculateGstBreakdownVendor(...args: any[]): any { return null; }
+// (removed: determineInterStateVendor/calculateGstBreakdownVendor were dead stubs
+// that always returned false/null; purchaseReturnController now uses the real
+// determineInterStateByGstin + calculateGstBreakdown implementations.)

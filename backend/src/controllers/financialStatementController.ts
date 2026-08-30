@@ -12,11 +12,18 @@ export class FinancialStatementController {
 
             const accounts = await prisma.chartOfAccount.findMany({ where: { userId }, orderBy: { code: "asc" } });
             
+            // Trial Balance must be CUMULATIVE (every posted line from the account's
+            // inception up to toDate), not a period-filtered movement report - that is
+            // what distinguishes it from a P&L. Using gte: fromDate here previously
+            // silently dropped all prior-period balances once a company had more than
+            // one year of history, so it would stop reconciling with the Balance Sheet.
+            // fromDate is intentionally unused for this filter now; kept as an accepted
+            // query param for API compatibility.
             const lines = await prisma.journalLine.groupBy({
                 by: ["accountId"],
                 where: { 
                     userId,
-                    journalEntry: { journalDate: { gte: fromDate, lte: toDate }, status: "POSTED" }
+                    journalEntry: { journalDate: { lte: toDate }, status: "POSTED" }
                 },
                 _sum: { debit: true, credit: true }
             });
@@ -86,7 +93,7 @@ export class FinancialStatementController {
                 const debit = Number((line as any)?._sum?.debit || 0);
                 const credit = Number((line as any)?._sum?.credit || 0);
                 
-                if (acc.accountType === "REVENUE") {
+                if (acc.accountType === "INCOME") {
                     const balance = credit - debit;
                     if (balance !== 0) {
                         revenueAccounts.push({ ...acc, balance });
@@ -158,7 +165,7 @@ export class FinancialStatementController {
                         equityAccounts.push({ ...acc, balance });
                         totalEquity += balance;
                     }
-                } else if (acc.accountType === "REVENUE") {
+                } else if (acc.accountType === "INCOME") {
                     totalRevenue += (credit - debit);
                 } else if (acc.accountType === "EXPENSE") {
                     totalExpense += (debit - credit);

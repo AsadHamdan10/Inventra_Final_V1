@@ -15,6 +15,8 @@ export async function postSaleAccounting(userId: number, sale: any, reqUserId: n
   const accOutputIgst = await getAccountByCode(userId, '2150', tx);
   const accCogs = await getAccountByCode(userId, '5100', tx);
   const accInventory = await getAccountByCode(userId, '1140', tx);
+  const accOtherIncome = await getAccountByCode(userId, '4200', tx);
+  const accOtherExpense = await getAccountByCode(userId, '6200', tx);
 
   const lines = [];
 
@@ -28,6 +30,21 @@ export async function postSaleAccounting(userId: number, sale: any, reqUserId: n
   if (Number(sale.igstAmount) > 0) lines.push({ accountId: accOutputIgst, debit: 0, credit: sale.igstAmount, description: `Output IGST` });
   if (Number(sale.cgstAmount) > 0) lines.push({ accountId: accOutputCgst, debit: 0, credit: sale.cgstAmount, description: `Output CGST` });
   if (Number(sale.sgstAmount) > 0) lines.push({ accountId: accOutputSgst, debit: 0, credit: sale.sgstAmount, description: `Output SGST` });
+
+  // BUGFIX: grandTotal = totalTaxable + totalGst + otherExpense - roundOff, but
+  // otherExpense/roundOff were never given their own journal lines, so any sale
+  // with either field non-zero produced Debit(grandTotal) != Credit(totalTaxable+
+  // totalGst), which postJournal's balance check rejects with JOURNAL_NOT_BALANCED
+  // — silently failing the ENTIRE sale-creation transaction. Balance it properly.
+  if (Number(sale.otherExpense) > 0) {
+    lines.push({ accountId: accOtherIncome, debit: 0, credit: sale.otherExpense, description: `Other charges recovered` });
+  }
+  const saleRoundOff = Number(sale.roundOff || 0);
+  if (saleRoundOff > 0) {
+    lines.push({ accountId: accOtherExpense, debit: saleRoundOff, credit: 0, description: `Round off` });
+  } else if (saleRoundOff < 0) {
+    lines.push({ accountId: accOtherIncome, debit: 0, credit: -saleRoundOff, description: `Round off` });
+  }
 
   // COGS (Debit) & Inventory (Credit)
   if (Number(sale.totalPurchaseCost) > 0) {
@@ -96,6 +113,8 @@ export async function postPurchaseAccounting(userId: number, purchase: any, reqU
   const accInputCgst = await getAccountByCode(userId, '2160', tx);
   const accInputSgst = await getAccountByCode(userId, '2170', tx);
   const accInputIgst = await getAccountByCode(userId, '2180', tx);
+  const accOtherIncomeP = await getAccountByCode(userId, '4200', tx);
+  const accOtherExpenseP = await getAccountByCode(userId, '6200', tx);
 
   const lines = [];
 
@@ -106,6 +125,18 @@ export async function postPurchaseAccounting(userId: number, purchase: any, reqU
   if (Number(purchase.igstAmount) > 0) lines.push({ accountId: accInputIgst, debit: purchase.igstAmount, credit: 0, description: `Input IGST` });
   if (Number(purchase.cgstAmount) > 0) lines.push({ accountId: accInputCgst, debit: purchase.cgstAmount, credit: 0, description: `Input CGST` });
   if (Number(purchase.sgstAmount) > 0) lines.push({ accountId: accInputSgst, debit: purchase.sgstAmount, credit: 0, description: `Input SGST` });
+
+  // BUGFIX: same unbalanced-journal issue as postSaleAccounting above — grandTotal
+  // includes otherExpense/roundOff, which previously had no journal line.
+  if (Number(purchase.otherExpense) > 0) {
+    lines.push({ accountId: accOtherExpenseP, debit: purchase.otherExpense, credit: 0, description: `Other charges on purchase` });
+  }
+  const purchaseRoundOff = Number(purchase.roundOff || 0);
+  if (purchaseRoundOff > 0) {
+    lines.push({ accountId: accOtherIncomeP, debit: 0, credit: purchaseRoundOff, description: `Round off` });
+  } else if (purchaseRoundOff < 0) {
+    lines.push({ accountId: accOtherExpenseP, debit: -purchaseRoundOff, credit: 0, description: `Round off` });
+  }
 
   // Payable (Credit)
   lines.push({ accountId: accPayable, debit: 0, credit: purchase.grandTotal, description: `Accounts Payable` });

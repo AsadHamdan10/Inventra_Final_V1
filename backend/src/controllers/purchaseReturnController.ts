@@ -3,7 +3,9 @@ import { assertFinancialPeriodOpen } from '../services/financialPeriodService';
 import { Request, Response } from 'express';
 import { PrismaClient } from '@prisma/client';
 import { z } from 'zod';
-import { determineInterStateVendor as determineInterState, calculateGstBreakdownVendor as calculateGstBreakdown } from './purchaseController';
+import { calculateGstBreakdown } from './saleController';
+import { determineInterStateByGstin } from '../utils/gstStateUtil';
+import { safeDecrypt } from '../utils/crypto';
 
 
 const prisma = new PrismaClient();
@@ -66,7 +68,15 @@ export const createPurchaseReturn = async (req: Request, res: Response) => {
         if (!purchase) return res.status(404).json({ error: 'Purchase not found.' });
         if (purchase.status === 'CANCELLED') return res.status(400).json({ error: 'Cannot return a cancelled purchase.' });
 
-        const isInterState = determineInterState(tenant.id, purchase.vendorId!);
+        // GST FIX: this previously called a stub that always returned `false`;
+        // now derived from GST State Codes (tenant vs vendor GSTIN).
+        const returnVendor = purchase.vendorId ? await prisma.vendor.findUnique({ where: { id: purchase.vendorId } }) : null;
+        const isInterState = determineInterStateByGstin(
+          safeDecrypt(tenant.gstin) || null,
+          tenant.state || null,
+          returnVendor ? (safeDecrypt(returnVendor.vendorGstin) || null) : null,
+          null
+        );
         let totalTaxable = 0, totalGst = 0, igstAmount = 0, cgstAmount = 0, sgstAmount = 0, grandTotal = 0;
 
         const returnItemsData: any[] = [];
@@ -111,7 +121,7 @@ export const createPurchaseReturn = async (req: Request, res: Response) => {
             const itemGst = Number((itemTaxable * (gstPct / 100)).toFixed(2));
             const itemTotal = Number((itemTaxable + itemGst).toFixed(2));
 
-            const breakdown = {igst:0,cgst:0,sgst:0,totalGst:0};
+            const breakdown = calculateGstBreakdown(itemTaxable, gstPct, isInterState);
             igstAmount += breakdown.igst;
             cgstAmount += breakdown.cgst;
             sgstAmount += breakdown.sgst;
@@ -172,7 +182,13 @@ export const updatePurchaseReturn = async (req: Request, res: Response) => {
 
         const tenant = await prisma.user.findUnique({ where: { id: userId } });
         const purchase = ret.purchase;
-        const isInterState = determineInterState(tenant!.id, purchase.vendorId!);
+        const returnVendor2 = purchase.vendorId ? await prisma.vendor.findUnique({ where: { id: purchase.vendorId } }) : null;
+        const isInterState = determineInterStateByGstin(
+          safeDecrypt(tenant!.gstin) || null,
+          tenant!.state || null,
+          returnVendor2 ? (safeDecrypt(returnVendor2.vendorGstin) || null) : null,
+          null
+        );
 
         let totalTaxable = 0, totalGst = 0, igstAmount = 0, cgstAmount = 0, sgstAmount = 0, grandTotal = 0;
         const returnItemsData: any[] = [];
@@ -208,7 +224,7 @@ export const updatePurchaseReturn = async (req: Request, res: Response) => {
             const itemGst = Number((itemTaxable * (gstPct / 100)).toFixed(2));
             const itemTotal = Number((itemTaxable + itemGst).toFixed(2));
 
-            const breakdown = {igst:0,cgst:0,sgst:0,totalGst:0};
+            const breakdown = calculateGstBreakdown(itemTaxable, gstPct, isInterState);
             igstAmount += breakdown.igst;
             cgstAmount += breakdown.cgst;
             sgstAmount += breakdown.sgst;

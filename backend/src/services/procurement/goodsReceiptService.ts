@@ -23,8 +23,9 @@ export const createGoodsReceipt = async (userId: number, data: any) => {
     // Lookup vendor name if missing
     let vendorName = data.vendorName;
     if (!vendorName && data.vendorId) {
+        // SECURITY: data.vendorId is client-supplied and must be tenant-scoped.
         const vendor = await prisma.vendor.findUnique({ where: { id: data.vendorId } });
-        if (!vendor) throw new Error("Vendor not found");
+        if (!vendor || vendor.userId !== userId) throw new Error("Vendor not found");
         vendorName = vendor.vendorName;
     }
 
@@ -32,10 +33,14 @@ export const createGoodsReceipt = async (userId: number, data: any) => {
     const processedItems = [];
     for (const item of data.items) {
         let materialName = item.materialName;
-        if (!materialName && item.materialId) {
+        if (item.materialId) {
+            // SECURITY: item.materialId is client-supplied and must be tenant-scoped,
+            // regardless of whether materialName was also supplied — otherwise this
+            // GRN silently links to (and, on posting, mutates the stock of) another
+            // tenant's material.
             const mat = await prisma.material.findUnique({ where: { id: item.materialId } });
-            if (!mat) throw new Error(`Material ${item.materialId} not found`);
-            materialName = mat.materialName;
+            if (!mat || mat.userId !== userId) throw new Error(`Material ${item.materialId} not found`);
+            if (!materialName) materialName = mat.materialName;
         }
         processedItems.push({
             materialId: item.materialId,
@@ -127,11 +132,17 @@ export const postGoodsReceipt = async (userId: number, id: number) => {
             } else {
                 if (item.materialId) {
                     const mat = await tx.material.findUnique({ where: { id: item.materialId } });
-                    if (mat && mat.standardCost) unitCost = new Decimal(mat.standardCost);
+                    if (!mat || mat.userId !== userId) throw new Error(`Material ${item.materialId} not found`);
+                    if (mat.standardCost) unitCost = new Decimal(mat.standardCost);
                 }
             }
 
             if (item.materialId) {
+                // SECURITY: guard against a materialId that belongs to another tenant
+                // reaching this stock-mutating update (defense in depth in case the
+                // GRN was ever created without the ownership check in createGoodsReceipt).
+                const ownedMaterial = await tx.material.findUnique({ where: { id: item.materialId }, select: { userId: true } });
+                if (!ownedMaterial || ownedMaterial.userId !== userId) throw new Error(`Material ${item.materialId} not found`);
                 await tx.material.update({
                     where: { id: item.materialId },
                     data: { currentStock: { increment: item.acceptedQty } }

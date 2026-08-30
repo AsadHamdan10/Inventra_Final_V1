@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { requireAuth } from '../middlewares/auth';
+import { requireAuth, requireTenantOwner } from '../middlewares/auth';
 import {
   getMe,
   updateProfile,
@@ -11,6 +11,12 @@ const router = Router();
 router.get('/me', requireAuth, getMe);
 
 // Update company profile
-router.put('/profile', requireAuth, updateProfile);
+// Phase 6.10I fix: this duplicate endpoint (the canonical one is
+// PUT /auth/profile) was still guarded by requireAuth only, which lets a
+// staff (TenantUser) session reach it even though the owner-only intent
+// is enforced everywhere else via requireTenantOwner. No frontend caller
+// targets this route (verified via repo-wide grep), but it must not be
+// left as an unauthenticated-for-staff backdoor.
+router.put('/profile', requireTenantOwner, updateProfile);
 
 export default router;

@@ -75,6 +75,14 @@ export const createDeliveryChallan: import('express').RequestHandler = async (re
 
     const { items, dcDate, ...data } = parsed.data;
 
+    // SECURITY: customerId is client-supplied and must be tenant-scoped, otherwise
+    // this delivery challan (and any sale later invoiced from it) could be linked
+    // to another tenant's customer.
+    if ((data as any).customerId) {
+      const cust = await prisma.customer.findUnique({ where: { id: (data as any).customerId } });
+      if (!cust || cust.userId !== userId) return res.status(400).json({ error: 'Customer not found.' });
+    }
+
     const result = await prisma.$transaction(async (tx) => {
         const resolvedItems = await Promise.all(items.map(async (item) => {
             const materialsRaw = await tx.$queryRaw<any[]>`SELECT * FROM materials WHERE "user_id" = ${userId} AND id = ${item.materialId} FOR UPDATE`;
@@ -110,6 +118,12 @@ export const updateDeliveryChallan: import('express').RequestHandler = async (re
     if (!parsed.success) return res.status(400).json({ error: 'Validation failed.', details: parsed.error.flatten().fieldErrors });
 
     const { items, dcDate, ...data } = parsed.data;
+
+    // SECURITY: same tenant check as createDeliveryChallan.
+    if ((data as any).customerId) {
+      const cust = await prisma.customer.findUnique({ where: { id: (data as any).customerId } });
+      if (!cust || cust.userId !== userId) return res.status(400).json({ error: 'Customer not found.' });
+    }
 
     const result = await prisma.$transaction(async (tx) => {
         const existing = await tx.deliveryChallan.findFirst({ where: { id, userId } });

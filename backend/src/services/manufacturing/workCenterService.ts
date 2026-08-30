@@ -1,6 +1,11 @@
 import prisma from '../../utils/prisma';
 
 export const createWorkCenter = async (userId: number, data: any) => {
+    // SECURITY: warehouseId is client-supplied and must be tenant-scoped.
+    if (data.warehouseId) {
+        const wh = await prisma.warehouse.findUnique({ where: { id: data.warehouseId }, select: { userId: true } });
+        if (!wh || wh.userId !== userId) throw new Error("Warehouse not found");
+    }
     return prisma.workCenter.create({
         data: {
             userId,
@@ -20,6 +25,10 @@ export const createWorkCenter = async (userId: number, data: any) => {
 export const updateWorkCenter = async (userId: number, id: number, data: any) => {
     const existing = await prisma.workCenter.findUnique({ where: { id }});
     if (!existing || existing.userId !== userId) throw new Error("Work Center not found");
+    if (data.warehouseId) {
+        const wh = await prisma.warehouse.findUnique({ where: { id: data.warehouseId }, select: { userId: true } });
+        if (!wh || wh.userId !== userId) throw new Error("Warehouse not found");
+    }
 
     return prisma.workCenter.update({
         where: { id },

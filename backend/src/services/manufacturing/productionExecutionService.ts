@@ -42,7 +42,8 @@ export const postMaterialIssue = async (userId: number, executionId: number, com
         // Lock material
         await tx.$executeRaw`SELECT id FROM materials WHERE id = ${componentItemId} FOR UPDATE`;
         const material = await tx.material.findUnique({ where: { id: componentItemId } });
-        if (!material || Number(material.currentStock) < quantity) throw new Error("Insufficient stock");
+        if (!material || material.userId !== userId) throw new Error("Component material not found");
+        if (Number(material.currentStock) < quantity) throw new Error("Insufficient stock");
 
         // Validate requirement
         const poComp = await tx.productionOrderComponent.findFirst({
@@ -55,7 +56,7 @@ export const postMaterialIssue = async (userId: number, executionId: number, com
         // FIFO Engine Logic
         let remainingToConsume = quantity;
         const layers = await tx.inventoryLayer.findMany({
-            where: { materialId: componentItemId, remainingQty: { gt: 0 } },
+            where: { userId, materialId: componentItemId, remainingQty: { gt: 0 } },
             orderBy: { receivedDate: 'asc' }
         });
 

@@ -16,6 +16,19 @@ export const createProductionOrder = async (userId: number, data: any) => {
 
     if (Number(data.plannedQuantity) <= 0) throw new Error("Planned quantity must be positive");
 
+    // SECURITY: bomId/routingId are client-supplied and must be tenant-scoped,
+    // otherwise a production order could be released against another tenant's
+    // BOM/routing, pulling their recipe (component material IDs/quantities)
+    // into this tenant's material issue and costing flow.
+    if (data.bomId) {
+        const bom = await prisma.billOfMaterial.findUnique({ where: { id: data.bomId }, select: { userId: true } });
+        if (!bom || bom.userId !== userId) throw new Error("Invalid BOM");
+    }
+    if (data.routingId) {
+        const routing = await prisma.routing.findUnique({ where: { id: data.routingId }, select: { userId: true } });
+        if (!routing || routing.userId !== userId) throw new Error("Invalid Routing");
+    }
+
     return prisma.productionOrder.create({
         data: {
             userId,
